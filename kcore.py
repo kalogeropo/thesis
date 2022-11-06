@@ -1,47 +1,18 @@
-import math
-from math import log
-
+from math import log, sqrt
 import numpy
 import sys
-
 import collections
 import matplotlib.pyplot as plt
 import networkx as nx
-
 import string
-
-import nltk
 from nltk.corpus import stopwords
-
+import csv
 
 translator = str.maketrans('', '', string.punctuation)
-
-from operator import itemgetter
-
-from networkx import core_number, k_core
-import csv
 
 postinglist = []
 docinfo = []
 docs_without_main_core = []
-
-# buggy na xrisimopoii8ei i proepeksergasia pou exei dimiourgi8ei san ksexwristo .py
-
-def preproccess(file):
-    with open(file, 'r') as fd:
-        text = fd.read().split()
-    fd.close()
-    with open(file, 'w'):
-        pass
-    with open(file, 'a') as fd:
-        fd.write('')
-        for term in text:
-            term = term.translate(translator)
-            term = term.upper()
-            if len(term) != 1:
-                fd.write("%s \n" % term)
-    fd.close()
-    return 1
 
 
 # todo: more efficient way to calculate max length of path it doesnt work on realistic scale (CANT BE DONE BECAUSE THE COMPLEXITY)
@@ -198,7 +169,8 @@ def plot_degree_dist(graph, *args, **kwargs):
     nx.draw_networkx_edges(graph, pos, alpha=0.4)
 
     plt.savefig('figures/allq/' + str(filename) + '_degree.png', format="PNG", dpi=600)
-#TODO: paths
+
+
 def stopwordsStats(kcore,term_list,file):
 
     stopword = stopwords.words('english')
@@ -378,21 +350,14 @@ def doc_rep(doc_vec, idf_vec, *args, **kwargs):
             nw.append(1)
     else:
         nw = args[0]
-    # print(nw)
+ 
     test = numpy.zeros((len(doc_vec), len(idf_vec)))
     for i in range(len(doc_vec)):
-        # print(docs[i])
         for j in range(len(idf_vec)):
-            # print(doc_vec[i][j])
             if doc_vec[i][j] > 0:
                 test[i][j] = (1 + log(doc_vec[i][j])) * idf_vec[j] * float(nw[j])
             else:
                 test[i][j] = 0
-    # with open('debuglog.dat', 'a') as fd:
-    #    fd.write('doc representa \n')
-    #   for doci in test:
-    #        fd.write('%s \n' %str(len(doci)))
-    # fd.close()
     return test
 
 
@@ -594,7 +559,7 @@ def distance_to_line(starting_point, end_point, point):
     print(point)
     x0 = point[0]
     y0 = point[1]
-    dist = (abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y1 * x1)) / (math.sqrt(((y2 - y1) ** 2) + ((x2 - x1) ** 2)))
+    dist = (abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y1 * x1)) / (sqrt(((y2 - y1) ** 2) + ((x2 - x1) ** 2)))
 
     return dist
 
