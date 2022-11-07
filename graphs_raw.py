@@ -107,10 +107,10 @@ def CreateAdjMatrix_Vazirgiannis_implementation(terms, file, window_size):
     counter = 0
     for term in split_file:
         row_index = terms.index(term)
-        for x in range(0,window_size):
+        for x in range(0, window_size):
             try:
                 col_index = terms.index(split_file[counter + x])
-                adj_matrix[row_index][col_index]+=1
+                adj_matrix[row_index][col_index] += 1
             except IndexError:
                 break
         counter+=1
@@ -194,27 +194,22 @@ def sortByDegree(val):
 
 def uniongraph(terms, term_freq, adjmatrix, collection_terms, union_graph_termlist_id, union_gr, id,
                collection_term_freq, kcore, kcorebool):
-    #print(adjmatrix)
-    for i in range(len(adjmatrix)): #auto douleuei dioti o adjacency matrix proerxetai apo ton admatrix tou pruned graph opws kai o kcore ara uparxei
-        #tautisi twn diktwn (i) twn kombwn
-        if i in kcore and kcorebool == True:
-            h = 0.06
-        else:
-            h = 1
-        #
-		#print(h)
+    for i in range(len(adjmatrix)): #auto douleuei dioti o adjacency matrix proerxetai apo ton admatrix tou pruned graph opws kai o kcore
+        # ara uparxei tautisi twn diktwn (i) twn kombwn
+        h = 0.06 if i in kcore and kcorebool == True else 1
+        
         if terms[i] not in collection_terms:
             collection_terms[terms[i]] = id
             union_graph_termlist_id.append(id)
-            collection_term_freq.append(term_freq[i] * (term_freq[i] + 1) * 0.5*0.05)
+            collection_term_freq.append(term_freq[i] * (term_freq[i] + 1) * 0.5 * 0.05)
             union_gr.add_node(terms[i], id=id)
             id += 1
         elif terms[i] in collection_terms:
             index = collection_terms[terms[i]]
-            collection_term_freq[index] += term_freq[i] * (term_freq[i] + 1) * 0.5*0.05
+            collection_term_freq[index] += term_freq[i] * (term_freq[i] + 1) * 0.5 * 0.05
         for j in range(len(adjmatrix)):
             if i > j:
-                if adjmatrix[i][j]!=0:
+                if adjmatrix[i][j] != 0:
                     if terms[j] not in collection_terms:
                         collection_terms[terms[j]] = id
                         union_graph_termlist_id.append(id)
@@ -236,7 +231,7 @@ def uniongraph(terms, term_freq, adjmatrix, collection_terms, union_graph_termli
 
 
 # deletes by re drawing the graph edges of the graph given a minimum weight !needs fix but dont work
-def pruneGraphbyWeight(aMatrix,termlist):
+def pruneGraphbyWeight(aMatrix, termlist, S):
     print('pruning the graph')
     temp = Woutdegree(aMatrix) #[list of weight sums of each node]
     maxval = (sum(temp[0]) / (len(temp[0]) * len(temp[0]))) #avarage weight of node

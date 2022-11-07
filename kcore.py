@@ -86,7 +86,7 @@ def pruneGraphbySimilarity(aMatrix, pers, minsim, termName):
     return g, Matrix.todense()
 
 
-def graphUsingAdjMatrix(adjmatrix, termlist, *args, **kwargs):
+def graphUsingAdjMatrix(adjmatrix, termlist, **kwargs):
     gr = nx.Graph()
     filename = kwargs.get('filename', None)
     if not filename:
