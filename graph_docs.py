@@ -1,5 +1,6 @@
-from networkx import Graph
+from networkx import Graph, disjoint_union_all
 from document import Document
+
 
 from numpy import array, transpose, dot, diagonal, fill_diagonal
 
@@ -8,7 +9,7 @@ class GraphDoc(Document):
     def __init__(self, path):
         super().__init__(path)
         self.adj_matrix = self.create_adj_matrix() 
-        self.graph = None
+        self.graph = self.create_graph_from_adjmatrix()
 
 
     ################################################################################################
@@ -46,48 +47,54 @@ class GraphDoc(Document):
         if self.adj_matrix is None:
             self.adj_matrix = self.create_adj_matrix()
     
-        self.graph = Graph()
+        graph = Graph()
         termlist = list(self.tf.keys())
         for i in range(self.adj_matrix.shape[0]):
-            self.graph.add_node(i, term=termlist[i])
+            graph.add_node(i, term=termlist[i])
             for j in range(self.adj_matrix.shape[1]):
                 if i > j:
-                    self.graph.add_edge(i, j, weight=self.adj_matrix[i][j])
-        # graphToPng(gr,filename = filename)
+                    graph.add_edge(i, j, weight=self.adj_matrix[i][j])
+        # self.graphToPng(gr,filename = filename)
 
-        return self
+        return graph
 
 
-    def uniongraph(terms, term_freq, adjmatrix, collection_terms, union_graph_termlist_id, union_gr, id,
-               collection_term_freq, kcore, kcorebool):
-        #auto douleuei dioti o adjacency matrix proerxetai apo ton admatrix tou pruned graph opws kai o kcore ara uparxei tautisi twn diktwn (i) twn kombwn
-        for i in range(adjmatrix.shape[0]):
-            h = 0.06 if i in kcore and kcorebool else 1
-            
-            if terms[i] not in collection_terms:
-                collection_terms[terms[i]] = id
-                union_graph_termlist_id.append(id)
-                collection_term_freq.append(term_freq[i] * (term_freq[i] + 1) * 0.5 * 0.05)
-                union_gr.add_node(terms[i], id=id)
-                id += 1
-            elif terms[i] in collection_terms:
-                index = collection_terms[terms[i]]
-                collection_term_freq[index] += term_freq[i] * (term_freq[i] + 1) * 0.5 * 0.05
-            for j in range(adjmatrix.shape[1]):
-                if i > j:
-                    if adjmatrix[i][j] != 0:
-                        if terms[j] not in collection_terms:
-                            collection_terms[terms[j]] = id
-                            union_graph_termlist_id.append(id)
-                            collection_term_freq.append(term_freq[j] * (term_freq[j] + 1) * 0.5 * 0.05)
-                            union_gr.add_node(terms[i], id=id)
-                            id += 1
-                        # print('kcorbool = %s and h = %d '%(str(kcorebool),h ))
-                        if not union_gr.has_edge(terms[i], terms[j]):
-                            union_gr.add_edge(terms[i], terms[j], weight=adjmatrix[i][j] * 0.05)
-                            #print("Calculating adj[",i,"]",j,"]: ",adjmatrix[i][j] * h)
-                        elif union_gr.has_edge(terms[i], terms[j]):
-                            union_gr[terms[i]][terms[j]]['weight'] += adjmatrix[i][j] * 0.05
-                            #print("Calculating adj[",i,"]",j,"]: ",adjmatrix[i][j] * h)
+class GraphUnion():
+    def __init__(self, graph_docs):
+        self.graph_docs = graph_docs
 
-        return terms, adjmatrix, collection_terms, union_graph_termlist_id, union_gr, id, collection_term_freq
+
+    def union_graph(self, kcore=[], kcorebool=False):
+        # empty union at first
+        union_graph = Graph()
+        
+        for gd in self.graph_docs:
+            adj_matrix = gd.adj_matrix
+            terms = list(gd.tf.keys())
+            fq = list(gd.tf.values())
+
+            for i in range(adj_matrix.shape[0]):
+                h = 0.06 if i in kcore and kcorebool == True else 1
+                
+                w_in = fq[i] * (fq[i] + 1) * 0.5 * h
+                if not union_graph.has_node(terms[i]):
+                    union_graph.add_node(terms[i], weight=w_in)
+                # else re-weight
+                elif union_graph.has_node(terms[i]):
+                    union_graph.nodes[terms[i]]['weight'] += w_in
+                
+                # visit only lower diagonal
+                for j in range(adj_matrix.shape[1]):
+                    if i > j:
+                        w_in_ng = fq[j] * (fq[j] + 1) * 0.5 * h
+                        if not union_graph.has_edge(terms[i], terms[j]):
+                            # node(term[j] auto created)
+                            # assign Win weight
+                            union_graph.nodes[terms[j]]['weight'] = w_in_ng
+                            # assign Wout weight
+                            union_graph.add_edge(terms[i], terms[j], weight=adj_matrix[i][j] * h)
+                        elif union_graph.has_edge(terms[i], terms[j]):
+                            union_graph[terms[i]][terms[j]]['weight'] += adj_matrix[i][j] * h
+
+            return union_graph
+
