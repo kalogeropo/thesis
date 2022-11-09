@@ -599,6 +599,8 @@ def average(lst):
         return sum(lst)/len(lst)
     except ZeroDivisionError:
         return 0
+
+        
 def pre_rec_calculation(rev_list,relevant):
     cnt = 0
     retrieved = 1

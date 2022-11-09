@@ -1,11 +1,16 @@
 from re import findall
-from json import dumps
+from os import getcwd
 
 class Document():
     def __init__(self, path):
-        self.path = path
-        self.doc_id = int(findall(r'\d+', self.path)[0])
-        self.tf = self.create_tf()
+        if path is not None:
+            self.path = path
+            self.doc_id = int(findall(r'\d+', self.path)[0])
+            self.tf = self.create_tf()
+        else:
+            self.path = getcwd()
+            self.doc_id = 696969
+            self.tf = {}
 
 
     def create_tf(self):
@@ -24,24 +29,3 @@ class Document():
 
         return tf
 
-
-class Corpus():
-    def __init__(self, documents):
-        self.documents = documents
-        self.inverted_index = {}
-
-    
-    def create_inverted_index(self):
-        for d, id in self.documents:
-            for key, value in d.items():
-                if key in self.inverted_index:
-                    self.inverted_index[key].append([id, value])
-                else:
-                    self.inverted_index[key] = [[id, value]]
-
-        return self.inverted_index
-
-    
-    def save_inverted_index(self):
-        with open('inverted_index.txt', 'w') as inv_ind:
-            inv_ind.write(dumps(self.inverted_index))
