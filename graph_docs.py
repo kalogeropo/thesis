@@ -1,4 +1,4 @@
-from networkx import Graph, disjoint_union_all
+from networkx import Graph, disjoint_union_all,from_numpy_array
 from document import Document
 
 
@@ -9,7 +9,7 @@ class GraphDoc(Document):
     def __init__(self, path):
         super().__init__(path)
         self.adj_matrix = self.create_adj_matrix() 
-        self.graph = self.create_graph_from_adjmatrix()
+        self.graph = None
 
 
     ################################################################################################
@@ -67,7 +67,7 @@ class GraphUnion():
     def union_graph(self, kcore=[], kcorebool=False):
         # empty union at first
         union_graph = Graph()
-        
+
         for gd in self.graph_docs:
             adj_matrix = gd.adj_matrix
             terms = list(gd.tf.keys())
@@ -79,22 +79,21 @@ class GraphUnion():
                 w_in = fq[i] * (fq[i] + 1) * 0.5 * h
                 if not union_graph.has_node(terms[i]):
                     union_graph.add_node(terms[i], weight=w_in)
+                    # print(f'Created node {terms[i]} with weight {w_in}')
                 # else re-weight
-                elif union_graph.has_node(terms[i]):
+                else:
                     union_graph.nodes[terms[i]]['weight'] += w_in
-                
+                    print(f'Updated node {terms[i]} new weight {union_graph.nodes[terms[i]]}')
                 # visit only lower diagonal
                 for j in range(adj_matrix.shape[1]):
                     if i > j:
-                        w_in_ng = fq[j] * (fq[j] + 1) * 0.5 * h
                         if not union_graph.has_edge(terms[i], terms[j]):
-                            # node(term[j] auto created)
-                            # assign Win weight
-                            union_graph.nodes[terms[j]]['weight'] = w_in_ng
                             # assign Wout weight
                             union_graph.add_edge(terms[i], terms[j], weight=adj_matrix[i][j] * h)
-                        elif union_graph.has_edge(terms[i], terms[j]):
+                            print(f'({terms[i], terms[j]}) edge weight: {adj_matrix[i][j] * h}')
+                        else:
                             union_graph[terms[i]][terms[j]]['weight'] += adj_matrix[i][j] * h
+                            print(f'({terms[i], terms[j]}) Wout edge weight updated')
 
-            return union_graph
+        return union_graph
 
