@@ -71,36 +71,6 @@ def node_simi(adjmatrix):
     return max, min
 
 
-# deletes by re drawing the graph edges of the graph given a minimum similarity
-def pruneGraphbySimilarity(aMatrix, pers, minsim, termName):
-    g = nx.Graph()
-    for i in range(len(aMatrix)):
-        for j in range(len(aMatrix)):
-            if i > j:
-                if cos_sim(aMatrix[i], aMatrix[j]) > minsim - ((minsim * pers)):
-                    g.add_node(termName[i], id=i)
-                    g.add_node(termName[j], id=j)
-                    g.add_edge(i, j, weight=aMatrix[i][j])
-    Matrix = nx.adjacency_matrix(g)
-    # print(Matrix)
-    return g, Matrix.todense()
-
-
-def graphUsingAdjMatrix(adjmatrix, termlist, **kwargs):
-    gr = nx.Graph()
-    filename = kwargs.get('filename', None)
-    if not filename:
-        filename = 'Name not found!'  # used when i want to visualize graphs with name
-
-    for i in range(0, len(adjmatrix)):
-        gr.add_node(i, term=termlist[i])
-        for j in range(len(adjmatrix)):
-            if i > j:
-                gr.add_edge(i, j, weight=adjmatrix[i][j])
-    # graphToPng(gr,filename = filename)
-    return gr
-
-
 # ------------------Graph visualization---------------
 
 def getGraphStats(graph, filename, graphPng, degreePng):
@@ -207,38 +177,7 @@ def stopwordsStats(kcore,term_list,file):
     fw.close()
 
 
-# -----------Union Graph to inverted index-------------
-def graphToIndex(id, terms, calc_term_w, plist, *args, **kwargs):
-    filename = kwargs.get('filename', None)
-    if not filename:
-        filename = 'inverted index.dat'
-    f = open(filename, "a+")
-    data = ','.join(
-        [str(i) for i in plist])  # join list to a string so we can write it in the inv index and load it with ease
-    f.write('%d;%s;%f;%s;\n' % (id, terms, calc_term_w, data))
-    f.close()
-    return 1
-
-
-
-# calculating the weight and write the inverted index file using graphToIndex method
-# NO USE
-def w_and_write_to_file(listofdeg, Umatrix, collection_terms, union_graph_termlist_id, collection_term_freq):
-    print('here')
-    for i in range(len(listofdeg[0])):
-        Wout = listofdeg[0][i]
-        Win = collection_term_freq[i]
-        nbrs = numpy.count_nonzero(Umatrix[i])
-        VarA = 1
-        VarB = 10
-        Alog = 1 + VarA * ((Wout / (nbrs + 1)) / (Win + 1))
-        Blog = 1 + VarB * (1 / (nbrs + 1))
-        temp = log(Alog) * log(Blog)
-        print(temp)
-
-        indexofw = postinglist.index(collection_terms[i])  # maybe not the best way of implementing the
-        graphToIndex(union_graph_termlist_id[i], collection_terms[i], temp, postinglist[indexofw + 1])
-    return 1
+# -----------Union Graph to inverted index------------
 
 
 def w_and_write_to_filev2(wout, collection_terms, union_graph_termlist_id, collection_term_freq, postinglist, file):
@@ -324,22 +263,6 @@ def apriori_prune(termsets_list, min_support):
             prunedlist.append([j[0], j[1]])
 
     return prunedlist
-
-
-def printmenu():
-    # menu implementation
-    print("1.create index file seperate graphs and  union graph")
-    print("2.load index file and then quering \n \n")
-
-    # x = input('Insert option: ')
-    hargs = int(sys.argv[1])
-    print(hargs)
-    S = float(sys.argv[2])
-    print(S)
-    x = int(sys.argv[3])
-    print(x)
-
-    return x, hargs, S
 
 
 def doc_rep(doc_vec, idf_vec, *args, **kwargs):

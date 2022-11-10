@@ -8,7 +8,7 @@ import string
 import pandas as pd
 from openpyxl import load_workbook
 
-from kcore import *
+from kcore_raw import *
 from graphs_raw import *
 
 translator = str.maketrans('', '', string.punctuation)
