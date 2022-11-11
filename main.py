@@ -15,29 +15,23 @@ def main():
     # define path
     current_dir = getcwd()
     test_path = "".join([current_dir, "/data/test_docs"])
-    print(test_path)
-
-    test_doc_path = "".join([test_path, "/01"])
-    doc = GraphDoc(test_doc_path, window=10)
-    print(doc.create_adj_matrix_with_window())
 
     # list files
     filenames = [join(test_path, f) for f in listdir(test_path)]
+
     graph_documents = []
     for filename in filenames:
         graph_doc = GraphDoc(filename, window=10)
-        print(graph_doc.create_graph_from_adjmatrix())
-        graph_doc.graph = graph_doc.create_graph_from_adjmatrix()
-        graph_doc.draw_graph(graph_doc.graph)
+        # graph_doc.graph = graph_doc.create_graph_from_adjmatrix()
         graph_documents += [graph_doc]
+        graph_doc.draw_graph()
 
     # takes as input list of graph document objects
-    ug = UnionGraph(graph_documents, window=10)
-    print(ug.union_graph())
+    ug = UnionGraph(graph_documents, window=0)
     # ug.save_inverted_index()
     union_graph = ug.union_graph()
+    # print(union_graph)
     ug.draw_graph(union_graph)
-    print(to_numpy_matrix(union_graph))
-
+    # print(to_numpy_matrix(union_graph))
 
 main()
