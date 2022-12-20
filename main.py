@@ -1,37 +1,96 @@
 from os import listdir, getcwd
-from os.path import expanduser, join
+from os.path import join
 from time import time
-from graphs import GraphDoc, UnionGraph
-from matplotlib.pyplot import show
-from networkx import to_numpy_matrix
+from pandas import DataFrame
 
-#TO DO: 1. calculate Node weights from union graph
-#TO DO: 2. ADD the weights to inverted index
-#TO DO: 3. CREATE the retrieval process (Classes: indexing, retrival->set-based->metrics)
-#TO DO:    3.a. Index Class -> import an inv index
-#TO DO:    3.b. Query document parsing -> graphs-weights -> apriori -> set based -> metrics
+from apriori import apriori
+from collection import Collection
+from graphs import GraphDoc
+from retrieval import *
+from utilities import excelwriter
+from parse import Parser
+from networkx import to_numpy_array, to_numpy_matrix
+
 
 def main():
-    # define path
-    current_dir = getcwd()
-    test_path = "".join([current_dir, "/data/test_docs"])
 
-    # list files
-    filenames = [join(test_path, f) for f in listdir(test_path)]
+    # create Collection Object by defining the path
+    collection = Collection(path='collections\\baeza', model='GSB', window=0, graph_docs=[]).load_collection()
+    print(collection.inv_index)
+    print(collection.graph)
+    # print(collection.union_graph())
+    # print(collection.inverted_index())
+    # collection.save_inverted_index()
+    # collection.save_graph_index()
+    # print(collection.get_adj_matrix())
 
-    graph_documents = []
-    for filename in filenames:
-        graph_doc = GraphDoc(filename, window=10)
-        # graph_doc.graph = graph_doc.create_graph_from_adjmatrix()
-        graph_documents += [graph_doc]
-        graph_doc.draw_graph()
+    # print(f'\nCreation of Union Graph took {time() - graph_start} secs')
+    # collection.save_graph_index()
+    # collection.save_inverted_index()
+    # un_gr = Collection().load_graph()
+    # print(un_gr)
 
-    # takes as input list of graph document objects
-    ug = UnionGraph(graph_documents, window=0)
-    # ug.save_inverted_index()
-    union_graph = ug.union_graph()
-    # print(union_graph)
-    ug.draw_graph(union_graph)
-    # print(to_numpy_matrix(union_graph))
+    """
+    inv_index = collection.create_inverted_index()
+    print(inv_index)
+    # col = Collection().load_collection()
+    # inv_index = col.inverted_index
+    
+
+    queries = [['a', 'b', 'd', 'n']]
+    relevant_docs, queries = Parser().load_collection('/CF')
+    print(relevant_docs)
+    print(queries)
+
+    N = 1239
+    avg_pre = []
+    avg_rec = []
+    for i, (query, rel_docs) in enumerate(zip(queries, relevant_docs)):
+        print(f"\nQuery {i} of {len(queries)}")
+
+        # stop @i query
+        if i == 10: break
+
+        print(f"Query length: {len(query)}")
+        apriori_start = time()
+        freq_termsets = apriori(query, inv_index, min_freq=1)
+        apriori_end = time()
+        print(f"Frequent Termsets: {len(freq_termsets)}")
+        print(f"Apriori iter {i} took {apriori_end - apriori_start} secs.")
+
+        vector_start = time()
+        # bug for the whole collection!!
+        idf = calculate_ts_idf(freq_termsets, N)
+        # print(idf, '\n')
+        tf_ij = calculate_tsf(freq_termsets, inv_index, N)
+        # print(tf_ij, '\n')
+        # tnw = calculate_tnw(freq_termsets, inv_index)
+        # print(tnw, '\n')
+
+        doc_weights = calculate_doc_weights(tf_ij, idf, tnw=1)
+        print(doc_weights)
+        print('\n')
+        vector_end = time()
+        print(f"Vector Space dimensionality {doc_weights.shape}")
+        print(f"Vector iter {i} took {vector_end - vector_start} secs.\n")
+        q = idf
+        document_similarities = evaluate_sim(q, doc_weights)
+        # print(len(document_similarities))
+
+        pre, rec = calc_precision_recall(document_similarities.keys(), rel_docs)
+        print(pre, rec)
+
+        avg_pre.append(pre)
+        avg_rec.append(rec)
+    # df = DataFrame(list(zip(avg_pre, avg_rec)), columns=["A_pre", "A_rec"])
+    # test_writer = excelwriter()
+    # stest_writer.write_results('', df)
+
+
+# TODO: testing framework, logging result handling
+# TODO: fix set based calculation weights and test it with the summing one
+# TODO: implement vazirgiannis window and ranking (github: gowpy)
+
+"""
 
 main()

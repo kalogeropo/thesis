@@ -1,8 +1,9 @@
-from networkx import Graph, draw, get_edge_attributes, from_numpy_array, to_numpy_matrix, spring_layout, draw_networkx_edge_labels
+from matplotlib import pyplot as plt
+from networkx import Graph, draw, circular_layout, get_node_attributes, set_node_attributes, get_edge_attributes, draw_networkx_edge_labels
+from numpy import array, transpose, dot, fill_diagonal, zeros
+
 from document import Document
-from numpy import array, transpose, dot, diagonal, fill_diagonal, zeros
-from matplotlib.pyplot import show
-from json import dumps
+from retrieval import calculate_tf
 
 
 class GraphDoc(Document):
@@ -10,10 +11,10 @@ class GraphDoc(Document):
         super().__init__(path)
         self.window = window
 
-        if window > 0: # boolean flag is already taken into consideration to be true
-            if isinstance(window, int):
+        if self.window > 0: # boolean flag is already taken into consideration to be true
+            if isinstance(self.window, int):
                 self.adj_matrix = self.create_adj_matrix_with_window()
-            elif isinstance(window, float):
+            elif isinstance(self.window, float):
                 num_of_words = len(self.tf)
                 self.window = int(num_of_words * window) + 1
                 self.adj_matrix = self.create_adj_matrix_with_window()
@@ -32,40 +33,17 @@ class GraphDoc(Document):
             rows = array(list(self.tf.values()))
 
             # reshape list to column and row vector
-            row = transpose(rows.reshape(1, rows.shape[0]))
-            col = transpose(rows.reshape(rows.shape[0], 1))
+            row = rows.reshape(1, rows.shape[0]).T
+            col = rows.reshape(rows.shape[0], 1).T
 
             # create adjecency matrix by dot product
             adj_matrix = dot(row, col)
 
             # calculate Win weights (diagonal terms)
-            for i in range(adj_matrix.shape[0]):
-                for j in range(adj_matrix.shape[1]):
-                    if i == j:
-                        adj_matrix[i][j] = rows[i] * (rows[i] + 1) * 0.5  # Win
+            win = [(w * (w + 1) * 0.5) for w in rows]
+            fill_diagonal(adj_matrix, win)
 
             return adj_matrix
-        else: return []
-
-
-    def create_adj_matrix_with_window(self):
-
-        terms = list(self.tf.keys())
-        windowed_doc = self.split_document(self.window)
-        adj_matrix = zeros(shape=(len(terms), len(terms)))
-        
-        for segment in windowed_doc:
-            tf = self.get_tf(segment)
-            for i in range(adj_matrix.shape[0]):
-                for j in range(adj_matrix.shape[1]):
-                    term_i = terms[i]
-                    term_j = terms[j]
-                    if term_i in tf.keys() and term_j in tf.keys():
-                        if i == j:
-                            adj_matrix[i][j] += tf[term_i] * (tf[term_i] + 1) / 2 #Win
-                        else:
-                            adj_matrix[i][j] += tf[term_i] * tf[term_j] # Wout
-        return adj_matrix
 
 
     def create_graph_from_adjmatrix(self):
@@ -73,82 +51,73 @@ class GraphDoc(Document):
         # check if adj matrix not built yet
         if self.adj_matrix is None:
             self.adj_matrix = self.create_adj_matrix()
-
+    
         graph = Graph()
         terms = list(self.tf.keys())
+        w_in = self.adj_matrix.diagonal()
+
         for i in range(self.adj_matrix.shape[0]):
+            graph.add_node(terms[i], weight=w_in[i])
             for j in range(self.adj_matrix.shape[1]):
-                if i >= j:
+                if i > j:
                     graph.add_edge(terms[i], terms[j], weight=self.adj_matrix[i][j])
 
         return graph
         
+    
+    def create_adj_matrix_with_window(self):
+        #print(f"with window {self.window}")
+        windows_size = self.window
 
+        # create windowed document
+        windowed_doc = self.split_document(windows_size)
 
-    def draw_graph(self, graph=None):
-        if graph is not None:
-            self.graph = graph
+        adj_matrix = zeros(shape=(len(self.tf), len(self.tf)), dtype=int)
+        for segment in windowed_doc:
+            w_tf = calculate_tf(segment)
 
-        elif self.graph is None:
-            self.graph = self.create_graph_from_adjmatrix()
-
-        # draw
-        # draw(self.graph, with_labels=True, labels=labels, node_colors=colors)
-        pos = spring_layout(self.graph)
-        labels = get_edge_attributes(self.graph, 'weight')
-        node_labels = {n: self.graph[n][n]['weight'] for n in self.graph.nodes}
-
-        draw(self.graph, pos, with_labels=True, labels=node_labels)
-        draw_networkx_edge_labels(self.graph, pos, edge_labels=labels)
-        show()
-        return
-
-
-class UnionGraph(GraphDoc):
-    def __init__(self, graph_docs, window, path=None):
-        super().__init__(path, window)
-        self.graph_docs = graph_docs
-        self.inverted_index = {}
-
-
-    # creates and updates an inverted_index
-    def get_inverted_index(self):
-        inverted_index = {}
-        for graph_doc in self.graph_docs:
-            for key, value in graph_doc.tf.items():
-                if key in self.inverted_index:
-                    inverted_index[key] += [[graph_doc.doc_id, value]]
-                else:
-                    inverted_index[key] = [[graph_doc.doc_id, value]]
-        return inverted_index
-
-
-    def create_inverted_index(self):
-        self.inverted_index = self.get_inverted_index()
-
-
-    def save_inverted_index(self):
-        with open(f'inverted_index{self.doc_id}.txt', 'w', encoding='UTF-8') as inv_ind:
-            if not self.inverted_index:
-                self.create_inverted_index()
-            inv_ind.write(dumps(self.inverted_index))
-
-
-    def union_graph(self, kcore=[], kcore_bool=False):
-        union = Graph()
-        # for every graph document object
-        for gd in self.graph_docs:
-            terms = list(gd.tf.keys())
-            # iterate through lower triangular matrix
-            for i in range(gd.adj_matrix.shape[0]):
-                # gain value of importance
-                h = 0.06 if terms[i] in kcore and kcore_bool else 1
-                for j in range(gd.adj_matrix.shape[1]):
-                    if i >= j:
-                        # 
-                        if union.has_edge(terms[i], terms[j]):
-                            union[terms[i]][terms[j]]['weight'] += (gd.adj_matrix[i][j] * h)
+            for i, term_i in enumerate(self.tf):
+                for j, term_j in enumerate(self.tf):
+                    if term_i in w_tf.keys() and term_j in w_tf.keys():
+                        if i == j:
+                            adj_matrix[i][j] += w_tf[term_i] * (w_tf[term_i] + 1) / 2
                         else:
-                            union.add_edge(terms[i], terms[j], weight=gd.adj_matrix[i][j] * h)
+                            adj_matrix[i][j] += w_tf[term_i] * w_tf[term_j]
+        return adj_matrix
 
-        return union
+    
+    def calculate_win(self):
+        return get_node_attributes(self.graph, 'weight')
+
+
+    def calculate_wout(self):
+        return {node: val for (node, val) in self.graph.degree(weight='weight')}
+
+
+    def number_of_nbrs(self):
+         return {node: val for (node, val) in self.graph.degree()}
+
+
+    def draw_graph(self, **kwargs):
+        graph = self.graph
+        options = {
+            'node_color': 'yellow',
+            'node_size': 50,
+            'linewidths': 0,
+            'width': 0.1,
+            'font_size': 8,
+        }
+        filename = kwargs.get('filename', None)
+        if not filename:
+            filename = 'Union graph'
+        plt.figure(filename, figsize=(17, 8))
+        plt.suptitle(filename)
+
+        pos_nodes = circular_layout(graph)
+        draw(graph, pos_nodes, with_labels=True, **options)
+
+        labels = get_edge_attributes(graph, 'weight')
+        draw_networkx_edge_labels(graph, pos_nodes, edge_labels=labels)
+        plt.show()
+        
+

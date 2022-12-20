@@ -1,224 +1,25 @@
-from os import listdir
-from os.path import expanduser, join, getsize, isfile
-from operator import itemgetter
+import os
 
-from time import time
+import time
+
 import sys
-import string
-import pandas as pd
-from openpyxl import load_workbook
+import csv
 
-from kcore_raw import *
-from graphs_raw import *
-
-translator = str.maketrans('', '', string.punctuation)
-# parsing a file to an inverted index and return a list of unique terms and term frequency
-
-
-def runIt(filename, ans, window_flag, window_size, sen_par_flag, par_window_size, per_window, dot_split, file_sum_mat):
-
-    #	corebool --> not used(Can change to apply union graph penalty or not)
-    #	splitfiles --> Window based splitting methods will be used if true(Exists because we use GSB in our experiments which doesnt require splitting)
-    #	sen_par_flag --> if true sentence paragraph method will be used
-    #	dot_split --> if true we will split according to "." using nltk's tokenize with punkt
-    #	window_size --> The size of window when we are splitting using constant windows. If it is equal to 0
-    #			per_window will be used instead.s(per_window is the percentage of the text we will use)
-    #	per_window --> A number between 0-1. 0 is 0% of the text while 1 is 100%. It is used to calculate the
-    #			window size when using file length percentage based splitting.
-    #	par_window_size --> Only used when sen_par_flag is true. It is the window size that corresponds to the paragraph level
-    #	invfilename --> filename of the inverted index that will be constructed.
-    #
-    # Flag Hierarchy:
-    #
-    #	splitfiles >> sen_par_flag >> dot_split >> corebool(doesnt do anyting yet)
-    #
-    #	if splitfiles is false then we use gsb
-    #
-    #	if sen_par_flag is true we use sentence/paragraph splitting
-    #		if dot_split is true the sentence portion of the adjmatrix will be split according to "."
-    #		if dot split is false the file will be split according to window size(the sentence part only)
-    #			if window size is 0 then the sentence portion of the adjmatrix will be generated according to percentage of the file(based on per_window)
-    #			if window size is a positive integer the sentence portion of the adjmatrix will be generated according to that integer(constant window splitting)
-    #		For the paragraph part we will be using constant window splitting according to par_window_size.(always)
-    #	if sen_par_flag is false then we use regular splitting accoding to the rest of the flags/values
-    #		if dot_split is true then we use splitting according to "." using nltk and punkt
-    #		if dot split is false the file will be split according to window size
-    #			if window size is 0 then the file will be split according to percentage of the file(based on per_window)
-    #			if window size is a positive integer the file will be split according to that integer(constant window splitting)
-    #
-    #
-    #
-    # With current flags:
-    #
-    #	X=1 --> penalty on union graph splitting using percentages
-    #	X=2 --> GSB
-    #	X=3 --> penalty on union graph splitting using percentages
-    #	X=4 --> penalty on union graph splitting using "." ISSUE:IF nltk is not installed, BY PASS: At menu 2: input one of existing indexes
-    #	X=5 --> penalty on union graph splitting using constant window size
-    #	X=6 --> penalty on union graph splitting using sentence/paragraph windows
-    #
-    #   !This is where we add methods to improve the graph such as core/truss decomposition, pruning, methods for important nodes. !
-
-    #   NOTE: this main uses penalty on union graph (see lines 65,70,77 - uniongraph function) to punish frequent edges.
-    temp = createInvertedIndexFromFile(filename, postinglist)
-
-
-    if window_flag:
-        try:
-            adjmat = CreateAdjMatrixFromInvIndexWithWindow(temp[0], filename, window_size, per_window, dot_split)
-        except MemoryError:
-            sizeof_err_matrix = sys.getsizeof(adjmat)
-            print(sizeof_err_matrix)
-            exit(-1)        
-    elif sen_par_flag:
-        try:
-            adjmat = CreateAdjMatrixFromInvIndexWithSenParWindow(temp[0], filename, window_size, par_window_size, dot_split)
-        except MemoryError:
-            sizeof_err_matrix = sys.getsizeof(adjmat)
-            print(sizeof_err_matrix)
-            exit(-1) 
-    else:
-        try:
-            adjmat = CreateAdjMatrixFromInvIndex(temp[0], temp[1])
-            print("Simple adjmatr this time")
-        except MemoryError:
-            sizeof_err_matrix = sys.getsizeof(adjmat)
-            print(sizeof_err_matrix)
-            exit(-1)
-
-    try:
-        gr = graphUsingAdjMatrix(adjmat, temp[0])
-        docinfo.append([filename, temp[3]])
-    except MemoryError:
-        sizeof_err_matrix = sys.getsizeof(adjmat)
-        print(sizeof_err_matrix)
-        exit(-1)
-
-    # store to file
-    with open('docinfo.dat', 'a') as file_handler:
-        file_handler.write('%s %s \n' % (filename, temp[3]))
-    
-
-    # calculate the difference between min and max similarity and use it to prune our graph
-    kcore = nx.Graph()
-    kcore_nodes = []
-    prunedadjm = nx.to_numpy_array(kcore)
-
-    if ans == 1:
-        # By creating new graph we can translate it easily to the respective adj matrix
-        # without calculating each edge weight separtly. It returns a pruned GRAPH
-        print("Calculating without maincore:")
-        prunedadjm = adjmat
-        kcore_nodes = []
-    
-    term_freq = temp[1]
-
-    return adjmat, temp[0], gr, term_freq, kcore_nodes, prunedadjm, file_sum_mat  # adjacency matrix terms list , graph
-
-
-def get_documents():
-    home = expanduser('~')
-    path = f'{home}/Desktop/thesis/data/docs'
-            
-    return [join(path, f) for f in listdir(path) if isfile(join(path, f)) and getsize(join(path, f))]
-
-######################## somewhat MAIN? #############################
 ########################--------test-------------#####################
-# needed files
-documents = get_documents()
 
-# variables
 union_graph_termlist_id = []  # id of each unique word in the collection
 id = 0  # index used to iterate  on every list
 collection_terms = {}  # unique terms in the collection as a dict for performance
 union_graph = nx.Graph()  # Union of each graph of every document
 collection_term_freq = []
+############################################
 file_sum_mat = [] #file and summation matrix
 stopword_weight_mat = []
+############################################
 sumtime = 0
-
-menu = 1
-if menu == 1:
-    #  1.create index using maincore
-    #  2.create index without considering maincore
-    #  3.Create index using Density method
-    #  4.Create index using CoreRank method\n' 
-
-    corebool = True
-    splitfiles = True
-    sen_par_flag = False
-    dot_split = False
-    window_size = 0
-    par_window_size = 0
-    per_window = 0.091
-    invfilename = 'NegMain.dat'
-    X = 1
-
-    un_start = time()
-    start = time()
-
-    for doc in documents:
-    
-        # print("=========================For file = %s==================== " % name)    
-        gr = runIt(doc, X, splitfiles, window_size, sen_par_flag, par_window_size, per_window, dot_split, file_sum_mat)
-        # write doc info to file
-        adjmatrix = gr[0]
-        terms = gr[1]
-        graph = gr[2]
-        term_freq = gr[3]
-        maincore = gr[4]
-        prunedadjm = gr[5]
-        file_sum_mat = gr[6]
-
-        try:
-            ug = uniongraph(terms, term_freq, adjmatrix, collection_terms, union_graph_termlist_id, union_graph, id,
-                            collection_term_freq, maincore, kcorebool=corebool)
-        except MemoryError:
-        
-            sizeofgraph = sys.getsizeof(union_graph.edge) + sys.getsizeof(union_graph.node)
-            print(sizeofgraph)
-            exit(-1)
-
-        #######################
-        collection_terms = ug[2]
-        #######################
-        id = ug[5]
-        union_graph = ug[4]
-        collection_term_freq = ug[6]
-
-        un_end = time()
-        sumtime += (un_end - un_start) / 60
-        #print('time spent on union graph = %f with adj matrix size %d' % (((un_end - un_start) / 60), len(adjmatrix)))
-        #print('elapsed time = %f' % sumtime)
-
-        del graph
-        del adjmatrix
-        del prunedadjm
-        del maincore
-
-    
-    print('****Union Graph stats********')
-    print(nx.info(union_graph))
-    # ---------------------------------- graph to weights -----------------------
-    print("calculating Term weights")
-    print('=======================')
-
-    end = time()
-    print('+++++++++++++++++++++++++++')
-    print('TIME = %f MINS' % ((end - start) / 60))
-    print('++++++++++++++++++++++++++++')
-    writetime = time()
-
-    wout = Woutusinggraph(union_graph)
-    print('POSTING LIST:')
-    print(postinglist)
-    w_and_write_to_filev2(wout, collection_terms, union_graph_termlist_id, collection_term_freq, postinglist, file=invfilename)
-    
-    endwritetime = time()
-    print('**********************\n*creating  inverted index  in %f MINS \n***********************' % ((endwritetime - writetime) / 60))
-    print('docs completely pruned %s'%str(docs_without_main_core))
-#====>
-elif menu == 2:
+menu = 2
+###################
+if menu == 2:
     # read files
     try:
         ids, trms, W, plist = load_inv_index('invertedindex.dat')  # index of terms GSB
@@ -263,10 +64,6 @@ elif menu == 2:
         invin = input('input inveted index for constant sentence and paragraph window implementation:')
         ids5, trms5, W5, plist5 = load_inv_index(invin)
     #####################
-    
-    # debug
-    #l = [i for i, j in zip(W, W1) if i == j]
-    #print(l)
 
     Qtest =  [' What are the effects of calcium on the physical properties of mucus from CF patients',
               ' Can one distinguish between the effects of mucus hypersecretion and infection on the submucosal glands of the respiratory tract in CF',
@@ -328,9 +125,7 @@ elif menu == 2:
 
         # GENERATE  TERMSETS
         One_termsets = one_termsets(Q, trms, plist, minfreq)
-        #print(One_termsets)
-        l1 = One_termsets
-        final_list = apriori(l1, minfreq)
+        final_list = apriori(One_termsets, minfreq)
         #print(final_list)
         #print('==Finished Generating the Frequent Sets==')
 
@@ -342,16 +137,6 @@ elif menu == 2:
         idf_vec = calculate_idf(final_list, len(docinfo))
         W_vec = calculate_termset_W(final_list, W, trms)
 
-        W_vec1 = calculate_termset_W(final_list, W1, trms)
-
-        W_vec2 = calculate_termset_W(final_list, W2, trms)
-
-        W_vec3 = calculate_termset_W(final_list, W3, trms)
-        
-        #####TEST###########
-        W_vec4 = calculate_termset_W(final_list,W4,trms)
-		
-        W_vec5 = calculate_termset_W(final_list,W5,trms)
         ####################
         
         print('===================================')
@@ -376,43 +161,6 @@ elif menu == 2:
         simple_set_based = q_D_similarities(query, documentmatrix, docs)
         sorted_simple_set_based = sorted(simple_set_based, key=itemgetter(1), reverse=True)
 
-        #print(len(sorted_simple_set_based))
-
-        # set based with GSB
-        # change on the weights:
-        documentmatrix = doc_rep(doc_vectors, idf_vec, W_vec)
-        graphextention_set_based = q_D_similarities(query, documentmatrix, docs)
-        sorted_graphextention_set_based = sorted(graphextention_set_based, key=itemgetter(1), reverse=True)
-        #print(sorted_graphextention_set_based)
-        # set based model with both changes:
-
-        documentmatrix = doc_rep(doc_vectors, idf_vec, W_vec1)
-        graphextention_set_based_using_main_core = q_D_similarities(query, documentmatrix, docs)
-        sorted_graphextention_set_based_using_main_core = sorted(graphextention_set_based_using_main_core,
-                                                                 key=itemgetter(1), reverse=True)
-        #print(sorted_graphextention_set_based_using_main_core)
-        documentmatrix = doc_rep(doc_vectors, idf_vec, W_vec2)
-        graphextention_set_based_using_dens = q_D_similarities(query, documentmatrix, docs)
-        sorted_graphextention_set_based_using_dens = sorted(graphextention_set_based_using_dens,
-                                                                 key=itemgetter(1), reverse=True)
-
-        documentmatrix = doc_rep(doc_vectors, idf_vec, W_vec3)
-        graphextention_set_based_using_coreRank = q_D_similarities(query, documentmatrix, docs)
-        sorted_graphextention_set_based_using_coreRank = sorted(graphextention_set_based_using_coreRank,
-                                                            key=itemgetter(1), reverse=True)
-                                                            
-        ###############TEST####################
-        documentmatrix = doc_rep(doc_vectors, idf_vec, W_vec4)
-        graphextention_set_based_using_constant_window = q_D_similarities(query, documentmatrix, docs)
-        sorted_graphextention_set_based_using_constant_window = sorted(graphextention_set_based_using_constant_window,
-                                                            key=itemgetter(1), reverse=True)
-        documentmatrix = doc_rep(doc_vectors, idf_vec, W_vec5)
-        graphextention_set_based_using_sen_par_window = q_D_similarities(query, documentmatrix, docs)
-        sorted_graphextention_set_based_using_sen_par_window = sorted(graphextention_set_based_using_sen_par_window,
-                                                            key=itemgetter(1), reverse=True)
-        #####################################################
-
-
         relevant = ALLrelevant[Qtest.index(Query)]
         #print('Query = ', Q)
         #print('relevant= ',relevant)
@@ -420,67 +168,9 @@ elif menu == 2:
         relevant = [item.zfill(5) for item in relevant]
         #print(relevant)
         list0 = [x[0].replace('txtfiles\\', '') for x, y in sorted_simple_set_based]
-        pre_rec = pre_rec_calculation(list0,relevant)
+        pre_rec = pre_rec_calculation(list0, relevant)
         av_precision.append(pre_rec[0])
         av_recall.append(pre_rec[1])
-        precision = pre_rec[2]
-        recall = pre_rec[3]
-
-        #print("****************list0******************")
-        list1 = [x[0].replace('txtfiles\\', '') for x, y in sorted_graphextention_set_based]
-
-        pre_rec = pre_rec_calculation(list1, relevant)
-        av_precision_gsb.append(pre_rec[0])
-        av_recall_gsb.append(pre_rec[1])
-        precision = pre_rec[2]
-        recall = pre_rec[3]
-
-        #print("****************list1******************")
-        list2 = [x[0].replace('txtfiles\\', '') for x, y in sorted_graphextention_set_based_using_main_core]
-        pre_rec = pre_rec_calculation(list2, relevant)
-        av_precision_gsb_mc.append(pre_rec[0])
-        av_recall_gsb_mc.append(pre_rec[1])
-        precision = pre_rec[2]
-        recall = pre_rec[3]
-
-        #print("****************list3******************")
-        list3 = [x[0].replace('txtfiles\\', '') for x, y in sorted_graphextention_set_based_using_dens]
-
-        pre_rec = pre_rec_calculation(list3, relevant)
-        av_precision_gsb_dens.append(pre_rec[0])
-        av_recall_gsb_dens.append(pre_rec[1])
-        precision = pre_rec[2]
-        recall = pre_rec[3]
-
-
-        #print("****************list3******************")
-        list4 = [x[0].replace('txtfiles\\', '') for x, y in sorted_graphextention_set_based_using_coreRank]
-
-        pre_rec = pre_rec_calculation(list4, relevant)
-        av_precision_gsb_coreRank.append(pre_rec[0])
-        av_recall_gsb_coreRank.append(pre_rec[1])
-        precision = pre_rec[2]
-        recall = pre_rec[3]
-
-        #print("****************list4******************")
-        
-        
-        ############TEST########################
-        list5 = [x[0].replace('txtfiles\\', '') for x, y in sorted_graphextention_set_based_using_constant_window]
-
-        pre_rec = pre_rec_calculation(list5, relevant)
-        av_precision_constant.append(pre_rec[0])
-        av_recall_constant.append(pre_rec[1])
-        precision = pre_rec[2]
-        recall = pre_rec[3]
-
-        #print("****************list5******************")
-		
-        list6 = [x[0].replace('txtfiles\\', '') for x, y in sorted_graphextention_set_based_using_sen_par_window]
-
-        pre_rec = pre_rec_calculation(list6, relevant)
-        av_precision_sen_par.append(pre_rec[0])
-        av_recall_sen_par.append(pre_rec[1])
         precision = pre_rec[2]
         recall = pre_rec[3]
 
