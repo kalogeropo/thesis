@@ -1,7 +1,7 @@
 from re import findall
 from os import getcwd
 from os.path import exists
-from infre.retrieval import calculate_tf
+from infre.retrieval import tf
 
 
 class Document():
@@ -10,7 +10,7 @@ class Document():
             self.path = path
             self.doc_id = int(findall(r'\d+', self.path)[0])
             self.terms = self.read_document()
-            self.tf = calculate_tf(self.terms)
+            self.tf = tf(self.terms)
         else:
             raise FileExistsError
 

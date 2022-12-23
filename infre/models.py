@@ -4,17 +4,19 @@ from networkx.readwrite import json_graph
 from json import dumps, load, loads
 from os.path import join
 from os import makedirs
+from pickle import dump, load
+from bz2 import BZ2File
 
 import infre.helpers.utilities as utl
 from infre.tools.apriori import apriori
-from infre.retrieval import *
+from infre import retrieval
 
 
 class SetBased():
     def __init__(self, collection=None):
 
         # model name
-        self.model = self.get_class_name()
+        self.model = self.class_name()
 
         # collection handles all needed parsed data
         self.collection = collection
@@ -23,10 +25,10 @@ class SetBased():
         self.vector_queries = []
 
         # docs tensor holds documents representation in vector space of each query
-        self.docs_tensor = []
+        self.dtm_tensor = []
 
 
-    def get_class_name(self):
+    def class_name(self):
         return __class__.__name__
 
 
@@ -48,21 +50,21 @@ class SetBased():
             
             print(f"Query length: {len(query)} | Frequent Termsets: {len(freq_termsets)}")
        
-            idf = calculate_ts_idf(freq_termsets, N)
+            idf = retrieval.ts_idf(freq_termsets, N)
 
-            tf_ij = calculate_tsf(freq_termsets, inv_index, N)
+            sf_ij = retrieval.tsf(freq_termsets, inv_index, N)
 
             # clucnky solution for polymorphism
             try:
-                tnw = calculate_tnw(freq_termsets, self.nwk)
+                tnw = retrieval.tnw(freq_termsets, self.nwk)
             except AttributeError:
                 tnw = 1
             
             # represent documents in vector space
-            doc_vectors = calculate_doc_vectors(tf_ij, idf, tnw=tnw)
-
+            dtm = retrieval.doc_vectors(sf_ij, idf, tnw=tnw)
+          
             # keep local copy for dtm of every document
-            self.docs_tensor += [doc_vectors]
+            self.dtm_tensor += [dtm]
 
             # keep local copy for every query vector
             self.vector_queries += [idf]
@@ -73,13 +75,21 @@ class SetBased():
 
 
     def evaluate(self, relevant):
+
+        # vectors for precision and recall
         avg_pre, avg_rec = [], []
 
-        for i, (q, doc_vectors, rel) in enumerate(zip(self.vector_queries, self.docs_tensor, relevant)):
+        # for each query and (dtm, relevant) pair
+        for i, (q, dtm, rel) in enumerate(zip(self.vector_queries, self.dtm_tensor, relevant)):
+            
+            # cosine similarity between query and every document
+            qd_sims = retrieval.qd_similarities(q, dtm)
 
-            document_similarities = evaluate_sim(q, doc_vectors)
+            # rank them in desc order
+            retrieved_docs = retrieval.rank_documents(qd_sims)
 
-            pre, rec = calc_precision_recall(document_similarities.keys(), rel)
+            # precision | recall of ranking
+            pre, rec = retrieval.precision_recall(retrieved_docs.keys(), rel)
 
             print(f"=> Query {i+1} of {len(self.vector_queries)}")
             print(f'Precision: {pre:.3f} | Recall: {rec:.3f}\n')
@@ -87,7 +97,7 @@ class SetBased():
             avg_pre.append(round(pre, 3))
             avg_rec.append(round(rec, 3))
 
-        return array(pre), array(rec)
+        return array(avg_pre), array(avg_rec)
 
 
     def fit_evaluate(self, queries, relevant, mf=1):
@@ -96,14 +106,11 @@ class SetBased():
     
     def save_model(self, name=f'config.model'):
 
-        # import pick method
-        from pickle import dump
-
         # define indexes path
         path = join(self.model, name)
        
         try:
-            with open(path, 'wb') as config_model:
+            with BZ2File(path, 'wb') as config_model:
                 dump(self, config_model)
 
         except FileNotFoundError:
@@ -118,15 +125,12 @@ class SetBased():
 
 
     def load_model(self, name='config.model'):
-        
-        # import pick method
-        from pickle import load
 
         # define indexes path
         path = join(self.model, name)
 
         try:
-            with open(path, 'rb') as config_model:
+            with BZ2File(path, 'rb') as config_model:
 
                 return load(config_model)
 
@@ -148,17 +152,18 @@ class GSB(SetBased):
         self.nwk = self.calculate_nwk()
 
 
-    def get_class_name(self):
+    def class_name(self):
         return __class__.__name__
+
 
     # create tensor for adj matrices
     def create_adj_tensor(self):
-        matrices = []
+        tensor = []
         for document in self.collection.docs:
             adj_matrix = self.create_adj_matrix(document)
-            matrices += [adj_matrix]
+            tensor += [adj_matrix]
 
-        return matrices
+        return tensor
 
 
     ##############################################
@@ -299,7 +304,7 @@ class GSBWindow(GSB):
         super().__init__(collection)
 
 
-    def get_class_name(self):
+    def class_name(self):
         return __class__.__name__
 
 
@@ -313,7 +318,7 @@ class GSBWindow(GSB):
 
         adj_matrix = zeros(shape=(len(document.tf), len(document.tf)), dtype=int)
         for segment in windowed_doc:
-            w_tf = calculate_tf(segment)
+            w_tf = retrieval.tf(segment)
 
             for i, term_i in enumerate(document.tf):
                 for j, term_j in enumerate(document.tf):

@@ -6,32 +6,35 @@ from infre.tools.collection import Collection
 
 def main():
 
-    # queries = [['a', 'b', 'd', 'n'], ['b', 'h', 'g', 'l']]
-    # rel = [[1, 2, 3, 4], [2, 3, 4, 5]]
+    queries = [['a', 'b', 'd', 'n'], ['b', 'h', 'g', 'l', 'm']]
+    rel = [[1, 2, 3, 4], [1, 2, 5]]
 
-    path = 'collections/CF'
+    path = 'collections/baeza'
 
     # create directories, documents and inverted index
     col = Collection(path).create_collection()
-    queries, rel = col.load_qd()
+    # queries, rel = col.load_qd()
 
+    ######### example of laod #############
     # sb_model = SetBased(collection=None).load_model()
-    
+    # print(sb_model.collection.inverted_index)
+
+    ########## from scratch creation ###########
     sb_model = SetBased(col).fit(queries)
     pre, rec = sb_model.evaluate(rel)
-    print(f'SetBased: {mean(pre), mean(rec)}')
-    sb_model.save_model()
+    print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}')
+    # sb_model.save_model()
 
-    gsb_model = GSB(col).fit(queries)
-    pre, rec = gsb_model.evaluate(rel)
-    print(f'GSB: {mean(pre), mean(rec)}')
-    gsb_model.save_model()
-
-    gsb_window_model = GSBWindow(col, window=7).fit(queries)
-    pre, rec = gsb_window_model.evaluate(rel)
-    print(f'GSBW: {mean(pre), mean(rec)}')
-    gsb_window_model.save_model()
-
+    ########## apriori changed ###########
+    # gsb_model = GSB(col).fit(queries)
+    # pre, rec = gsb_model.evaluate(rel)
+    # print(f'GSB: {mean(pre):.3f}, {mean(rec):.3f}')
+    # gsb_model.save_model()
+    
+    # gsb_window_model = GSBWindow(col, window=10).fit(queries)
+    # pre, rec = gsb_window_model.evaluate(rel)
+    # print(f'GSBW: {mean(pre):.3f}, {mean(rec):.3f}')
+    # gsb_window_model.save_model()
 
         
 # df = DataFrame(list(zip(avg_pre, avg_rec)), columns=["A_pre", "A_rec"])
