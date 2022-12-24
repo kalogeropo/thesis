@@ -6,14 +6,14 @@ from infre.tools.collection import Collection
 
 def main():
 
-    queries = [['a', 'b', 'd', 'n'], ['b', 'h', 'g', 'l', 'm']]
-    rel = [[1, 2, 3, 4], [1, 2, 5]]
+    # queries = [['a', 'b', 'd', 'n'], ['b', 'h', 'g', 'l', 'm']]
+    # rel = [[1, 2, 3, 4], [1, 2, 5]]
 
-    path = 'collections/baeza'
+    path = 'collections/CF'
 
     # create directories, documents and inverted index
     col = Collection(path).create_collection()
-    # queries, rel = col.load_qd()
+    queries, rel = col.load_qd()
 
     ######### example of laod #############
     # sb_model = SetBased(collection=None).load_model()

@@ -61,7 +61,7 @@ class SetBased():
                 tnw = 1
             
             # represent documents in vector space
-            dtm = retrieval.doc_vectors(sf_ij, idf, tnw=tnw)
+            dtm = retrieval.doc_vectorizer(sf_ij, idf, tnw=tnw)
           
             # keep local copy for dtm of every document
             self.dtm_tensor += [dtm]
@@ -70,6 +70,7 @@ class SetBased():
             self.vector_queries += [idf]
 
             # print(f'{(time() - start):.2f} secs.\n') TODO: maybe loadbar
+        print('\n')
 
         return self
 
@@ -92,7 +93,7 @@ class SetBased():
             pre, rec = retrieval.precision_recall(retrieved_docs.keys(), rel)
 
             print(f"=> Query {i+1} of {len(self.vector_queries)}")
-            print(f'Precision: {pre:.3f} | Recall: {rec:.3f}\n')
+            print(f'Precision: {pre:.3f} | Recall: {rec:.3f}')
 
             avg_pre.append(round(pre, 3))
             avg_rec.append(round(rec, 3))

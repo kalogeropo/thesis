@@ -65,7 +65,7 @@ def tnw(termsets, nwk):
     return array(termset_weight)
 
 
-def doc_vectors(tf_ij, idf, tnw):
+def doc_vectorizer(tf_ij, idf, tnw):
     ########## each column corresponds to a document #########
     if isinstance(tnw, int):
         return round((tf_ij.T * idf).T, 3)
@@ -74,7 +74,7 @@ def doc_vectors(tf_ij, idf, tnw):
 
 
 def cosine_similarity(u, v):
-    if all(u == 0) or all(v == 0):
+    if (u == 0).all() | (v == 0).all():
         return 0.
     else:
         return dot(u,v) / (norm(u)*norm(v))

@@ -63,6 +63,7 @@ def create_candidate_k(freq_termsets, k):
                 termset = t1 | t2
                 if termset not in ck:
                     ck[termset] = intersection(t1_ids, t2_ids)
+
     return ck
 
 
@@ -71,23 +72,25 @@ def apriori(query, inv_index, min_freq):
     # the candidate sets for the 1-item is different,
     # create them independently of others
     c1 = create_candidate_1(query, inv_index)
-    # print(f"Initial 1-termsets: {c1}\n")
 
-    freq_termset = create_freq_term(c1, min_freq=min_freq)
-    # print(f'Frequent termsets: {freq_termset}\n')
-
-    freq_termsets = [freq_termset]
+    # filter the frequenct ones
+    freq_termsets = [create_freq_term(c1, min_freq=min_freq)]
 
     k = 0
     while len(freq_termsets[k]) > 0:
+
         freq_term = freq_termsets[k]
+
+        # create (k+1)
         ck = create_candidate_k(freq_term, k) 
-        # print(f"Candidate termsets: {ck}\n")      
 
+        # filter with respect to minimum frequency
         freq_term = create_freq_term(ck, min_freq=min_freq)
-        # print(f'Frequent termsets: {freq_term}\n')
 
+        # append to total
         freq_termsets.append(freq_term)
+
+        # increment round
         k += 1
     
     # unify freq termsets into one dictionary
