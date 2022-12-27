@@ -1,6 +1,7 @@
 from json import dumps, load
 from os.path import exists, join
 from os import makedirs, listdir, getcwd
+from gensim.utils import simple_preprocess
 
 from infre.tools.document import Document
 from networkx import to_numpy_array, is_empty
@@ -13,32 +14,25 @@ from numpy import fill_diagonal
 # graph_docs will be optional for other uses
 
 class Collection():
-    def __init__(self, path=None, docs=[]):
+    def __init__(self, path, docs=[]):
 
-        # To handle the difefentiation between save and load model
-        if path is not None:
+        self.path = {
+            'path': join(getcwd(), path),
+            'docs_path': join(getcwd(), path, 'docs'),
+            'index_path': join(getcwd(), path, 'indexes'),
+            'results_path': join(getcwd(), path, 'results'),
+        }
 
-            self.path = {
-                'path': join(getcwd(), path),
-                'docs_path': join(getcwd(), path, 'docs'),
-                'index_path': join(getcwd(), path, 'indexes'),
-                'results_path': join(getcwd(), path, 'results'),
-            }
+        self.number = len(listdir(self.path['docs_path']))
+        print(self.number)
+        # can be used to hold different user given information
+        self.params = {}
 
-            self.number = len(listdir(self.path['docs_path']))
+        # Class Representation of each document
+        self.docs = docs
 
-            # can be used to hold different user given information
-            self.params = {}
-
-            # boolean flag to distinguish when to create collection from scratch
-            # and when we can simply load from files
-            # self.load = load
-
-            # Class Representation of each document
-            self.docs = docs
-
-            # inverted index 
-            self.inverted_index = {}
+        # inverted index 
+        self.inverted_index = {}
 
 
     def create_collection(self):
@@ -60,7 +54,8 @@ class Collection():
         # list to hold every Document obj
         docs = []
         # for every document file
-        for filename in filenames: docs += [Document(filename)]
+        for filename in filenames: 
+            docs += [Document(filename)]
 
         return docs
 
@@ -72,20 +67,20 @@ class Collection():
         inv_index = {}
 
         for doc in self.docs:
-            for key, value in doc.tf.items():
+            for term, tf in doc.tf.items():
                 try:
-                    if key not in inv_index:
-                        inv_index[key] = {
+                    if term not in inv_index:
+                        inv_index[term] = {
                                             'id': id,
-                                            'tf': value,
-                                            'posting_list': [[doc.doc_id, value]],
+                                            'total_tf': tf,
+                                            'posting_list': [[doc.doc_id, tf]],
                                             # 'nwk': nwk[key],
-                                            'term': key
+                                            'term': term
                                         }
                         id += 1
-                    elif key in inv_index:
-                        inv_index[key]['tf'] += value
-                        inv_index[key]['posting_list'] += [[doc.doc_id, value]]
+                    elif term in inv_index:
+                        inv_index[term]['total_tf'] += tf
+                        inv_index[term]['posting_list'] += [[doc.doc_id, tf]]
                 except KeyError:
                     cnt += 1
                     print(f"Keys not found {cnt}")
@@ -160,8 +155,16 @@ class Collection():
     def load_qd(self):
        
         with open(join(self.path['path'], 'Queries.txt'), 'r') as fd:
-            queries = [q.upper().split() for q in fd.readlines()]
-
+            queries = [simple_preprocess(q, min_len=1, max_len=30) for q in fd.readlines()]
+            """
+            from nltk.corpus import stopwords
+            stop_words = stopwords.words('english')
+            print(raw_queries)
+            queries = []
+            for query in raw_queries:
+                queries.append([term for term in query if term not in stop_words])
+            print(queries)
+            """
         with open(join(self.path['path'], 'Relevant.txt'), 'r') as fd:
             relevant = [[int(id) for id in d.split()] for d in fd.readlines()]
 

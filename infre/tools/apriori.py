@@ -19,7 +19,7 @@ def create_candidate_1(query, inv_index):
             if t not in one_termsets:
                 one_termsets.append([t, doc_ids])
         else:
-            print('word %s has not required support or it already exists:' % term)
+            print('<word "%s" has not required support or it already exists.>' % term)
 
     return dict(one_termsets)
 

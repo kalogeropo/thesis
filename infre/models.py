@@ -1,11 +1,13 @@
 from networkx import Graph, set_node_attributes, get_node_attributes, to_numpy_array, is_empty
 from numpy import array, dot, fill_diagonal, zeros
 from networkx.readwrite import json_graph
+from math import log2
 from json import dumps, load, loads
-from os.path import join
-from os import makedirs
+from os.path import join, exists
+from os import makedirs, getcwd
 from pickle import dump, load
 from bz2 import BZ2File
+from pandas import DataFrame
 
 import infre.helpers.utilities as utl
 from infre.tools.apriori import apriori
@@ -26,20 +28,22 @@ class SetBased():
 
         # docs tensor holds documents representation in vector space of each query
         self.dtm_tensor = []
+        
+        # each index position corresponds to the mean precision of each query
+        self.precision = []
+
+        # each index position corresponds to the mean recall of each query
+        self.recall = []
 
 
     def class_name(self):
         return __class__.__name__
 
 
-    def compile(self):
-        pass
-
-
     def fit(self, queries, mf=1):
 
-        # N = self.collection.number
-        N = 1239
+        N = self.collection.number
+     
         inv_index = self.collection.inverted_index
 
         for i, query in enumerate(queries, start=1):
@@ -62,7 +66,7 @@ class SetBased():
             
             # represent documents in vector space
             dtm = retrieval.doc_vectorizer(sf_ij, idf, tnw=tnw)
-          
+    
             # keep local copy for dtm of every document
             self.dtm_tensor += [dtm]
 
@@ -76,9 +80,6 @@ class SetBased():
 
 
     def evaluate(self, relevant):
-
-        # vectors for precision and recall
-        avg_pre, avg_rec = [], []
 
         # for each query and (dtm, relevant) pair
         for i, (q, dtm, rel) in enumerate(zip(self.vector_queries, self.dtm_tensor, relevant)):
@@ -95,40 +96,59 @@ class SetBased():
             print(f"=> Query {i+1} of {len(self.vector_queries)}")
             print(f'Precision: {pre:.3f} | Recall: {rec:.3f}')
 
-            avg_pre.append(round(pre, 3))
-            avg_rec.append(round(rec, 3))
+            self.precision.append(round(pre, 3))
+            self.recall.append(round(rec, 3))
 
-        return array(avg_pre), array(avg_rec)
+        return array(self.precision), array(self.recall)
 
 
     def fit_evaluate(self, queries, relevant, mf=1):
         pass
 
     
-    def save_model(self, name=f'config.model'):
+    def save_results(self, *args):
 
+        # pre, rec = args if args else self.precision, self.recall
+        if args:
+            pre, rec = args
+        else:
+            pre, rec = self.precision, self.recall
+     
+        df = DataFrame(list(zip(pre, rec)), columns=["precision", "recall"])
+      
+        path = join(getcwd(), 'saved_models', self.model, 'results')
+
+        if not exists(path): makedirs(path)
+
+        df.to_excel(join(path, f'{self.model.lower()}.xlsx'))
+
+        return self
+
+
+    def save_model(self, path, name='config.model'):
+        
         # define indexes path
-        path = join(self.model, name)
-       
+        dir = join(getcwd(), path, self.model)
+   
+        if not exists(dir): makedirs(dir)
+
+        path = join(dir, name)
+
         try:
             with BZ2File(path, 'wb') as config_model:
                 dump(self, config_model)
 
         except FileNotFoundError:
-                # create directories
-                makedirs(self.model)
-
-                # call method recursively to complete the job
-                self.save_model(name)
-
-        finally: # if fails again, reteurn object
-            return self
+                FileNotFoundError
 
 
-    def load_model(self, name='config.model'):
+    def load_model(self, **kwargs):
 
         # define indexes path
-        path = join(self.model, name)
+        try:
+            path = join(getcwd(), kwargs['dir'], self.model, kwargs['name'])
+        except KeyError:
+            raise KeyError
 
         try:
             with BZ2File(path, 'rb') as config_model:
@@ -245,7 +265,7 @@ class GSB(SetBased):
         for k in list(Win.keys()):
             f = a * Wout[k] / ((Win[k] + 1) * (ngb[k] + 1))
             s = b / (ngb[k] + 1)
-            nwk[k] = round(log(1 + f) * log(1 + s), 3)
+            nwk[k] = round(log2(1 + f) * log2(1 + s), 3)
             # print(f'log(1 + ({a} * {Wout[k]} / (({Win[k]} + 1) * ({ngb[k]} + 1)) ) ) * log(1 + ({b} / ({ngb[k]} + 1))) = {nwk[k]}')
 
         return nwk
@@ -330,3 +350,86 @@ class GSBWindow(GSB):
                             adj_matrix[i][j] += w_tf[term_i] * w_tf[term_j]
         return adj_matrix
 
+
+class VSM():
+    def __init__(self, collection=None):
+
+        # model name
+        self.model = self.class_name()
+
+        # collection handles all needed parsed data
+        self.collection = collection
+
+        # idf vector 
+        self.idf_ = [round(log2(self.collection.number / len(self.collection.inverted_index[term]['posting_list'])), 3) 
+                            for term in self.collection.inverted_index]
+
+        # tf matrix
+        self.tf_idf_ = self.tf_idf()
+        print(self.tf_idf_)
+        # each index position corresponds to the mean precision of each query
+        self.precision = []
+
+        # each index position corresponds to the mean recall of each query
+        self.recall = []
+    
+
+    def query_vectorizer(self, query):
+        qv = []
+        inv_index = self.collection.inverted_index 
+        for term in inv_index:
+            i = inv_index[term]['id']
+            if term in query:
+                qv += [self.idf_[i]]
+            else:
+                qv += [0.]
+
+        return array(qv)
+
+
+    def fit_evaluate(self, queries, relevant):
+
+        N = self.collection.number
+
+        for query, rel in zip(queries, relevant):
+       
+            q = self.query_vectorizer(query)
+                
+            # cosine similarity between query and every document
+            qd_sims = retrieval.qd_similarities(q, self.tf_idf_)
+    
+            # rank them in desc order
+            retrieved_docs = retrieval.rank_documents(qd_sims)
+            
+            # precision | recall of ranking
+            pre, rec = retrieval.precision_recall(retrieved_docs.keys(), rel)
+
+            print(f'Precision: {pre:.3f} | Recall: {rec:.3f}')
+
+            self.precision.append(round(pre, 3))
+            self.recall.append(round(rec, 3))
+
+        return array(self.precision), array(self.recall)
+
+
+    def class_name(self):
+        return __class__.__name__
+
+
+    def tf_idf(self):
+
+        # inverted index of the collection
+        inv_index = self.collection.inverted_index
+
+        # Document objects
+        docs = self.collection.docs
+
+        # dtm
+        tf_idf_matrix = zeros(shape=(len(inv_index), len(docs)))
+
+        for j, doc in enumerate(docs):
+            for term, tf in doc.tf.items():
+                i = inv_index[term]['id']
+                tf_idf_matrix[i][j] += round((1 + (tf)) * self.idf_[i], 3)
+
+        return tf_idf_matrix
