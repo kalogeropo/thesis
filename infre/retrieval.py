@@ -1,6 +1,6 @@
 from numpy import array, zeros, round, dot, mean
 from numpy.linalg import norm
-from math import log2
+from math import log2, log
 
 
 def tf(terms):

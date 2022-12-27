@@ -16,15 +16,11 @@ from numpy import fill_diagonal
 class Collection():
     def __init__(self, path, docs=[]):
 
-        self.path = {
-            'path': join(getcwd(), path),
-            'docs_path': join(getcwd(), path, 'docs'),
-            'index_path': join(getcwd(), path, 'indexes'),
-            'results_path': join(getcwd(), path, 'results'),
-        }
+        self.path = join(getcwd(), path)
 
-        self.number = len(listdir(self.path['docs_path']))
+        self.number = len(listdir(self.path))
         print(self.number)
+
         # can be used to hold different user given information
         self.params = {}
 
@@ -45,11 +41,9 @@ class Collection():
 
 
     def create_documents(self):
-        # get path for documents
-        path = self.path['docs_path']
-
+    
         # list files
-        filenames = [join(path, f) for f in listdir(path)]
+        filenames = [join(self.path, f) for f in listdir(self.path)]
 
         # list to hold every Document obj
         docs = []
@@ -152,20 +146,28 @@ class Collection():
         return adj
 
 
+    def preprocess(self, document_terms):
+        from gensim.utils import simple_preprocess
+        from nltk.corpus import stopwords
+        # from nltk.stem import WordNetLemmatizer
+        punc_free_terms = simple_preprocess(' '.join(term for term in document_terms), min_len=1, max_len=30)
+        
+        stop_words = stopwords.words('english')
+        filtered_words = [term for term in punc_free_terms if term not in stop_words]
+        
+        #defining the object for Lemmatization
+        # wordnet_lemmatizer = WordNetLemmatizer()
+        # lemm_terms = [wordnet_lemmatizer.lemmatize(term) for term in filtered_words]
+    
+        return filtered_words
+
+
     def load_qd(self):
        
-        with open(join(self.path['path'], 'Queries.txt'), 'r') as fd:
-            queries = [simple_preprocess(q, min_len=1, max_len=30) for q in fd.readlines()]
-            """
-            from nltk.corpus import stopwords
-            stop_words = stopwords.words('english')
-            print(raw_queries)
-            queries = []
-            for query in raw_queries:
-                queries.append([term for term in query if term not in stop_words])
-            print(queries)
-            """
-        with open(join(self.path['path'], 'Relevant.txt'), 'r') as fd:
+        with open(join('collections/CF', 'Queries.txt'), 'r') as fd:
+            queries = [self.preprocess(q.split()) for q in fd.readlines()]
+            print(queries[0:10])
+        with open(join('collections/CF', 'Relevant.txt'), 'r') as fd:
             relevant = [[int(id) for id in d.split()] for d in fd.readlines()]
 
         return queries, relevant
