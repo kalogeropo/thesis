@@ -39,10 +39,10 @@ class Collection():
 
     def docs(self):
     
-        # list files in the form of generator object
+        # generator object to iter filenames
         filenames = (join(self.path, f) for f in listdir(self.path))
 
-        # for every document file
+        # generator object to iter Document objects
         for filename in filenames: 
             yield Document(filename)
 
