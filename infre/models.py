@@ -8,10 +8,9 @@ from os import makedirs, getcwd
 from pickle import dump, load
 from bz2 import BZ2File
 from pandas import DataFrame
-
 import infre.helpers.utilities as utl
 from infre.tools.apriori import apriori
-from infre import retrieval
+from infre.retrieval import Retrieve
 
 
 class SetBased():
@@ -38,35 +37,40 @@ class SetBased():
 
     def class_name(self):
         return __class__.__name__
-
+        
 
     def fit(self, queries, mf=1):
-
+        
+        # number of documents
         N = self.collection.number
-     
+
+        # inverted index of collection documents
         inv_index = self.collection.inverted_index
 
+        # for each query
         for i, query in enumerate(queries, start=1):
         
             print(f"=> Query {i} of {len(queries)}")
-    
+
+            # apply apriori to find frequent termsets
             freq_termsets = apriori(query, inv_index, min_freq=mf)
             
             print(f"Query length: {len(query)} | Frequent Termsets: {len(freq_termsets)}")
-       
-            idf = retrieval.ts_idf(freq_termsets, N)
 
-            sf_ij = retrieval.tsf(freq_termsets, inv_index, N)
 
+            idf = Retrieve.ts_idf(freq_termsets, N)
+            
+            sf_ij = Retrieve.tsf(freq_termsets, inv_index, N)
+            
             # clucnky solution for polymorphism
             try:
-                tnw = retrieval.tnw(freq_termsets, self.nwk)
+                tnw = Retrieve.tnw(freq_termsets, self.nwk)
             except AttributeError:
                 tnw = 1
             
             # represent documents in vector space
-            dtm = retrieval.doc_vectorizer(sf_ij, idf, tnw=tnw)
-    
+            dtm = Retrieve.doc_vectorizer(sf_ij, idf, tnw=tnw)
+            
             # keep local copy for dtm of every document
             self.dtm_tensor += [dtm]
 

@@ -9,7 +9,7 @@ def main():
     # queries = [['a', 'b'], ['a', 'b', 'd', 'n'], ['b', 'h', 'g', 'l', 'm']]
     # rel = [[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 5]]
 
-    path = 'collections/CF'
+    path = 'collections/CF/docs'
     ######### example of laod #############
     # sb_model = SetBased(collection=None).load_model(dir='saved models')
     # print(sb_model.collection.inverted_index)

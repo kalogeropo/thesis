@@ -1,12 +1,10 @@
 from math import log, sqrt
 import numpy
-import sys
 import collections
 import matplotlib.pyplot as plt
 import networkx as nx
 import string
 from nltk.corpus import stopwords
-import csv
 
 translator = str.maketrans('', '', string.punctuation)
 

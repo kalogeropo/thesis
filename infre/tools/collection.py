@@ -19,13 +19,12 @@ class Collection():
         self.path = join(getcwd(), path)
 
         self.number = len(listdir(self.path))
-        print(self.number)
 
         # can be used to hold different user given information
         self.params = {}
 
         # Class Representation of each document
-        self.docs = docs
+        self.documents = docs
 
         # inverted index 
         self.inverted_index = {}
@@ -33,25 +32,19 @@ class Collection():
 
     def create_collection(self):
         
-        if not self.docs:
-            self.docs = self.create_documents()
         self.inverted_index = self.create_inverted_index()
 
         return self    
 
 
-    def create_documents(self):
+    def docs(self):
     
-        # list files
-        filenames = [join(self.path, f) for f in listdir(self.path)]
+        # list files in the form of generator object
+        filenames = (join(self.path, f) for f in listdir(self.path))
 
-        # list to hold every Document obj
-        docs = []
         # for every document file
         for filename in filenames: 
-            docs += [Document(filename)]
-
-        return docs
+            yield Document(filename)
 
 
     def create_inverted_index(self):
@@ -152,21 +145,21 @@ class Collection():
         # from nltk.stem import WordNetLemmatizer
         punc_free_terms = simple_preprocess(' '.join(term for term in document_terms), min_len=1, max_len=30)
         
-        stop_words = stopwords.words('english')
-        filtered_words = [term for term in punc_free_terms if term not in stop_words]
+        # stop_words = stopwords.words('english')
+        # filtered_words = [term for term in punc_free_terms if term not in stop_words]
         
         #defining the object for Lemmatization
         # wordnet_lemmatizer = WordNetLemmatizer()
         # lemm_terms = [wordnet_lemmatizer.lemmatize(term) for term in filtered_words]
     
-        return filtered_words
+        return punc_free_terms
 
 
     def load_qd(self):
        
         with open(join('collections/CF', 'Queries.txt'), 'r') as fd:
             queries = [self.preprocess(q.split()) for q in fd.readlines()]
-            print(queries[0:10])
+
         with open(join('collections/CF', 'Relevant.txt'), 'r') as fd:
             relevant = [[int(id) for id in d.split()] for d in fd.readlines()]
 
