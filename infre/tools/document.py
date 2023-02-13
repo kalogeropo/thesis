@@ -1,7 +1,7 @@
 from re import findall
 from os import getcwd
 from os.path import exists
-from infre.retrieval import Retrieve
+from infre import retrieval
 
 
 class Document():
@@ -22,7 +22,7 @@ class Document():
         self.terms = self.read_document()
 
         # calcualte word term frequenciess
-        self.tf = Retrieve.tf(self.terms)
+        self.tf = retrieval.tf(self.terms)
 
 
     def read_document(self):

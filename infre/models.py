@@ -10,7 +10,7 @@ from bz2 import BZ2File
 from pandas import DataFrame
 import infre.helpers.utilities as utl
 from infre.tools.apriori import apriori
-from infre.retrieval import Retrieve
+from infre import retrieval
 
 
 class SetBased():
@@ -58,18 +58,18 @@ class SetBased():
             print(f"Query length: {len(query)} | Frequent Termsets: {len(freq_termsets)}")
 
 
-            idf = Retrieve.ts_idf(freq_termsets, N)
+            idf = retrieval.ts_idf(freq_termsets, N)
             
-            sf_ij = Retrieve.tsf(freq_termsets, inv_index, N)
+            sf_ij = retrieval.tsf(freq_termsets, inv_index, N)
             
             # clucnky solution for polymorphism
             try:
-                tnw = Retrieve.tnw(freq_termsets, self.nwk)
+                tnw = retrieval.tnw(freq_termsets, self.nwk)
             except AttributeError:
                 tnw = 1
             
             # represent documents in vector space
-            dtm = Retrieve.doc_vectorizer(sf_ij, idf, tnw=tnw)
+            dtm = retrieval.doc_vectorizer(sf_ij, idf, tnw=tnw)
             
             # keep local copy for dtm of every document
             self.dtm_tensor += [dtm]
@@ -183,7 +183,9 @@ class GSB(SetBased):
 
     # create tensor for adj matrices
     def create_adj_tensor(self):
+
         tensor = []
+
         for document in self.collection.docs:
             adj_matrix = self.create_adj_matrix(document)
             tensor += [adj_matrix]
@@ -195,35 +197,39 @@ class GSB(SetBased):
     ## Creating a complete graph TFi*TFj = Wout ##
     ##############################################
     def create_adj_matrix(self, document):
-        if document.tf is not None:
 
-            # get list of term frequencies
-            rows = array(list(document.tf.values()))
+        # get list of term frequencies
+        rows = array(list(document.tf.values()))
 
-            # reshape list to column and row vector
-            row = rows.reshape(1, rows.shape[0]).T
-            col = rows.reshape(rows.shape[0], 1).T
+        # reshape list to column and row vector
+        row = rows.reshape(1, rows.shape[0]).T
+        col = rows.reshape(rows.shape[0], 1).T
 
-            # create adjecency matrix by dot product
-            adj_matrix = dot(row, col)
+        # create adjecency matrix by dot product
+        adj_matrix = dot(row, col)
 
-            # calculate Win weights (diagonal terms)
-            win = [(w * (w + 1) * 0.5) for w in rows]
-            fill_diagonal(adj_matrix, win)
+        # calculate Win weights (diagonal terms)
+        win = [(w * (w + 1) * 0.5) for w in rows]
 
-            return adj_matrix
+        # assign weights of each nodes
+        fill_diagonal(adj_matrix, win)
+
+        return adj_matrix
 
 
     def union_graph(self, kcore=[], kcore_bool=False):
 
         union = Graph()
+
         # for every graph document object
         for doc, adj_matrix in zip(self.collection.docs, self.adj_tensor):
             terms = list(doc.tf.keys())
+
             # iterate through lower triangular matrix
             for i in range(adj_matrix.shape[0]):
                 # gain value of importance
                 h = 0.06 if terms[i] in kcore and kcore_bool else 1
+
                 for j in range(adj_matrix.shape[1]):
                     if i >= j:
                         if union.has_edge(terms[i], terms[j]):

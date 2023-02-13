@@ -24,7 +24,7 @@ class Collection():
         self.params = {}
 
         # Class Representation of each document
-        self.documents = docs
+        self.docs = docs
 
         # inverted index 
         self.inverted_index = {}
@@ -32,11 +32,27 @@ class Collection():
 
     def create_collection(self):
         
+        if not self.docs:
+            self.docs = self.documents()
+
         self.inverted_index = self.create_inverted_index()
 
         return self    
 
 
+    def documents(self):
+
+        docs = []
+        # generator object to iter filenames
+        filenames = (join(self.path, f) for f in listdir(self.path))
+
+        # generator object to iter Document objects
+        for filename in filenames: 
+            docs += [Document(filename)]
+
+        return docs
+
+    """
     def docs(self):
     
         # generator object to iter filenames
@@ -46,6 +62,8 @@ class Collection():
         for filename in filenames: 
             yield Document(filename)
 
+        # yeild from (Document(filename) for filename in filenames)
+    """
 
     def create_inverted_index(self):
 
