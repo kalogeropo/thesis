@@ -3,7 +3,7 @@ from os.path import exists, join
 from os import makedirs, listdir, getcwd
 from gensim.utils import simple_preprocess
 
-from infre.tools.document import Document
+from infre.preprocess.document import Document
 from networkx import to_numpy_array, is_empty
 from numpy import fill_diagonal
 
@@ -18,29 +18,29 @@ class Collection():
 
         self.path = join(getcwd(), path)
 
-        self.number = len(listdir(self.path))
+        self.num_docs = len(listdir(self.path))
 
         # can be used to hold different user given information
         self.params = {}
 
-        # Class Representation of each document
+        # List of Document object of each document
         self.docs = docs
 
         # inverted index 
         self.inverted_index = {}
 
 
-    def create_collection(self):
+    def create(self):
         
         if not self.docs:
-            self.docs = self.documents()
+            self.docs = self._documents()
 
         self.inverted_index = self.create_inverted_index()
 
         return self    
 
 
-    def documents(self):
+    def _documents(self):
 
         docs = []
         # generator object to iter filenames
@@ -79,7 +79,7 @@ class Collection():
                                             'id': id,
                                             'total_tf': tf,
                                             'posting_list': [[doc.doc_id, tf]],
-                                            # 'nwk': nwk[key],
+                                            #'nwk': nwk[key],
                                             'term': term
                                         }
                         id += 1
@@ -92,7 +92,7 @@ class Collection():
 
         return inv_index
 
-
+    
     def get_inverted_index(self):
         return self.inverted_index
 
@@ -157,10 +157,12 @@ class Collection():
         return adj
 
 
-    def preprocess(self, document_terms):
-        from gensim.utils import simple_preprocess
-        from nltk.corpus import stopwords
+    @staticmethod
+    def preprocess(document_terms):
+        
+        # from nltk.corpus import stopwords
         # from nltk.stem import WordNetLemmatizer
+        
         punc_free_terms = simple_preprocess(' '.join(term for term in document_terms), min_len=1, max_len=30)
         
         # stop_words = stopwords.words('english')
@@ -173,12 +175,13 @@ class Collection():
         return punc_free_terms
 
 
-    def load_qd(self):
-       
-        with open(join('collections/CF', 'Queries.txt'), 'r') as fd:
-            queries = [self.preprocess(q.split()) for q in fd.readlines()]
+    @staticmethod
+    def load_qd(path):
 
-        with open(join('collections/CF', 'Relevant.txt'), 'r') as fd:
+        with open(join(path, 'Queries.txt'), 'r') as fd:
+            queries = [Collection.preprocess(q.split()) for q in fd.readlines()]
+
+        with open(join(path, 'Relevant.txt'), 'r') as fd:
             relevant = [[int(id) for id in d.split()] for d in fd.readlines()]
 
         return queries, relevant

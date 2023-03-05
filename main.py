@@ -1,10 +1,10 @@
-from infre.models import SetBased, GSB, GSBWindow
+from infre.models import SetBased, GSB
 from numpy import mean
 from networkx import to_numpy_array
-from infre.tools.collection import Collection
+from infre.preprocess import Collection
 
 
-def main():
+if __name__ == '__main__':
 
     # queries = [['a', 'b'], ['a', 'b', 'd', 'n'], ['b', 'h', 'g', 'l', 'm']]
     # rel = [[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 5]]
@@ -14,9 +14,14 @@ def main():
     # sb_model = SetBased(collection=None).load_model(dir='saved models')
     # print(sb_model.collection.inverted_index)
 
-    # create directories, documents and inverted index
-    col = Collection(path).create_collection()
-    queries, rel = col.load_qd()
+    # load queries, relevant documents
+    queries, rel = Collection.load_qd('collections/CF')
+
+    print(queries[:3])
+    print(rel[:3])
+    # create collection object
+    # most needed attrs: inverted index and size of collection
+    col = Collection(path).create()
 
     ########## from scratch creation ###########
     ########## SET BASED ####################
@@ -41,7 +46,7 @@ def main():
     # gsb_window_model.save_model('saved_models')
 
     """
-    g_emb = Node2Vec(G, dimensions=64, workers=4)
+    node2vec = Node2Vec(G, dimensions=64, workers=4)
 
     WINDOW = 10 # Node2Vec fit window
     MIN_COUNT = 1 # Node2Vec min. count
@@ -64,6 +69,3 @@ def main():
 # TODO: testing framework, logging result handling
 # TODO: fix set based calculation weights and test it with the summing one
 # TODO: implement vazirgiannis window and ranking (github: gowpy)
-
-
-main()

@@ -3,19 +3,6 @@ from numpy.linalg import norm
 from math import log2, log
 
 
-
-def tnw(termsets, nwk):
-    termset_weight = []
-    for termset in termsets:
-        tnw = 1
-        for term in termset:
-            if term in nwk:
-                tnw *= nwk[term]
-        termset_weight += [round(tnw, 3)]
-
-    return array(termset_weight)
-
-
 def tf(terms):
     tf = {}
     for term in terms:
@@ -26,17 +13,12 @@ def tf(terms):
     return tf
 
 
-def ts_idf(termsets, N):
-    # len(value) => in how many documents each termset appears
-    return array([round(log2(1 + (N / len(value))), 3) for value in termsets.values()])
-
-
 # termset frequency
 def tsf(termsets, inv_index, N):
     #    d1  d2  d3  . . .  di
     # S1 f11 f12 f13 . . . f1i
     # S2     f22            .
-    # S3         f33        .
+    # S3         f33        .s
     # .               .     .
     # .                  .  .
     # Sj fj1 fj2 fj3 . . . fij
