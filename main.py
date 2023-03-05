@@ -17,25 +17,23 @@ if __name__ == '__main__':
     # load queries, relevant documents
     queries, rel = Collection.load_qd('collections/CF')
 
-    print(queries[:3])
-    print(rel[:3])
     # create collection object
     # most needed attrs: inverted index and size of collection
     col = Collection(path).create()
 
     ########## from scratch creation ###########
     ########## SET BASED ####################
-    sb_model = SetBased(col).fit(queries)
-    pre, rec = sb_model.evaluate(rel)
-    print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}')
-    sb_model.save_results(pre, rec)
+    # sb_model = SetBased(col).fit(queries)
+    # pre, rec = sb_model.evaluate(rel)
+    # print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}')
+    # sb_model.save_results(pre, rec)
     # sb_model.save_model('saved_models')
    
     ########## GRAPHICAL SET BASED ####################
     gsb_model = GSB(col).fit(queries)
     pre, rec = gsb_model.evaluate(rel)
     print(f'GSB: {mean(pre):.3f}, {mean(rec):.3f}')
-    gsb_model.save_results(pre, rec)
+    # gsb_model.save_results(pre, rec)
     # gsb_model.save_model('saved_models')
 
     ########## GRAPHICAL SET BASED WITH WIWNDOW ####################

@@ -1,2 +1,0 @@
-class DocumentVectorizer():
-    pass
