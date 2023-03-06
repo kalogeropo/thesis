@@ -3,19 +3,24 @@ from numpy import array, dot, fill_diagonal, zeros
 from networkx.readwrite import json_graph
 from math import log2
 from json import dumps, load
-from os.path import join
-from pickle import load
+from pickle import load, dump
 import infre.helpers.utilities as utl
 from infre.tools import apriori
+from os.path import join, exists
+from os import makedirs, getcwd
+from bz2 import BZ2File
 
 from infre.models import BaseIRModel
-from infre import retrieval
+from infre.metrics import precision_recall
 
 
 class GSB(BaseIRModel):
     def __init__(self, collection):
         super().__init__(collection)
         
+        # model name
+        self.model = self._model()
+
         # empty graph to be filled by union
         self.graph = self.union_graph()
 
@@ -77,7 +82,7 @@ class GSB(BaseIRModel):
             retrieved_docs = self.rank_documents(qd_sims)
 
             # precision | recall of ranking
-            pre, rec = retrieval.precision_recall(retrieved_docs.keys(), rel)
+            pre, rec = precision_recall(retrieved_docs.keys(), rel)
 
             print(f"=> Query {i+1} of {num_of_q}")
             print(f'Precision: {pre:.3f} | Recall: {rec:.3f}')
@@ -88,23 +93,28 @@ class GSB(BaseIRModel):
         return array(self.precision), array(self.recall)
     
 
-    def model(self): return __class__.__name__
+    def _model(self): return __class__.__name__
     
-
+    # based on GSB model tns[i] is a weight represented by
+    # the product of all tnw[i] of each term contained in a termset
     def _tnsi(self, termsets):
-        tns = []
-        for termset in termsets:
+
+        # initialize arr
+        tns = zeros(len(termsets), dtype=float)
+
+        for i, termset in enumerate(termsets):
             tw = 1
             for term in termset:
                 if term in self.nwk:
+                    # get the nw weight of term k and mulitply it to total
                     tw *= self.nwk[term]
-            tns += [round(tw, 3)]
+            tns[i] = round(tw, 3)
 
-        return array(tns)
+        return tns
 
 
-    def tsf_idf_tns(self, tf_ij, idf, tns):
-        return tf_ij * (idf * tns).reshape(-1, 1)
+    def tsf_idf_tns(self, tsf_ij, idf, tns):
+        return tsf_ij * (idf * tns).reshape(-1, 1)
 
 
     ##############################################
@@ -133,20 +143,23 @@ class GSB(BaseIRModel):
 
     def union_graph(self, kcore=[], kcore_bool=False):
 
-        union = Graph()
+        union = Graph() # empty graph 
 
         # for every graph document object
         for doc in self.collection.docs:
+
+            # get terms of each document
             terms = list(doc.tf.keys())
 
+            # create it's adjecency matrix based on Makris alg
             adj_matrix = self.doc2adj(doc)
                 
-            # iterate through lower triangular matrix
             for i in range(adj_matrix.shape[0]):
                 # gain value of importance
                 h = 0.06 if terms[i] in kcore and kcore_bool else 1
 
                 for j in range(adj_matrix.shape[1]):
+                    # iterate through lower triangular matrix
                     if i >= j:
                         if union.has_edge(terms[i], terms[j]):
                             union[terms[i]][terms[j]]['weight'] += (adj_matrix[i][j] * h)
@@ -165,15 +178,15 @@ class GSB(BaseIRModel):
         return union
         
     
-    def win(self):
+    def _win(self):
         return get_node_attributes(self.graph, 'weight')
 
 
-    def wout(self):
+    def _wout(self):
         return {node: val for (node, val) in self.graph.degree(weight='weight')}
 
 
-    def number_of_nbrs(self):
+    def _number_of_nbrs(self):
         return {node: val for (node, val) in self.graph.degree()}
 
 
@@ -183,9 +196,9 @@ class GSB(BaseIRModel):
             self.graph = self.union_graph()
   
         nwk = {}
-        Win = self.win()
-        Wout = self.wout()
-        ngb = self.number_of_nbrs()
+        Win = self._win()
+        Wout = self._wout()
+        ngb = self._number_of_nbrs()
         a, b = a, b
 
         for k in list(Win.keys()):
@@ -197,7 +210,41 @@ class GSB(BaseIRModel):
         return nwk
     
 
+        # picke model
+    def save_model(self, path, name='config.model'):
+        
+        # define indexes path
+        dir = join(getcwd(), path, self.model)
+   
+        if not exists(dir):
+            makedirs(dir)
 
+        path = join(dir, name)
+
+        try:
+            with BZ2File(path, 'wb') as config_model:
+                dump(self, config_model)
+
+        except FileNotFoundError:
+                FileNotFoundError
+
+
+    # un-picke model
+    def load_model(self, **kwargs):
+
+        # define indexes path
+        try:
+            path = join(getcwd(), kwargs['dir'], self.model, kwargs['name'])
+        except KeyError:
+            raise KeyError
+
+        try:
+            with BZ2File(path, 'rb') as config_model:
+                return load(config_model)
+
+        except FileNotFoundError:
+                raise FileNotFoundError
+        
 
     def save_graph_index(self, name='graph_index.json'):
         
@@ -224,6 +271,7 @@ class GSB(BaseIRModel):
                 self.save_graph_index()
         finally: # if fails again, reteurn object
             return self
+
 
 
     def load_graph(self, name='graph_index.json'):

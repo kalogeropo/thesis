@@ -17,7 +17,7 @@ class GSBWindow(GSB):
 
 
     # overide basic method with the windowed one
-    def create_adj_matrix(self, document):
+    def doc2adj(self, document):
 
         windows_size = self.window
 

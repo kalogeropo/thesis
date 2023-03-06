@@ -168,7 +168,7 @@ class Collection():
         # stop_words = stopwords.words('english')
         # filtered_words = [term for term in punc_free_terms if term not in stop_words]
         
-        #defining the object for Lemmatization
+        # defining the object for Lemmatization
         # wordnet_lemmatizer = WordNetLemmatizer()
         # lemm_terms = [wordnet_lemmatizer.lemmatize(term) for term in filtered_words]
     

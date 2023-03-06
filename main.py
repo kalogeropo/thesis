@@ -23,9 +23,9 @@ if __name__ == '__main__':
 
     ########## from scratch creation ###########
     ########## SET BASED ####################
-    # sb_model = SetBased(col).fit(queries)
-    # pre, rec = sb_model.evaluate(rel)
-    # print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}')
+    sb_model = SetBased(col).fit(queries)
+    pre, rec = sb_model.evaluate(rel)
+    print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}')
     # sb_model.save_results(pre, rec)
     # sb_model.save_model('saved_models')
    
@@ -42,28 +42,29 @@ if __name__ == '__main__':
     # print(f'GSBW: {mean(pre):.3f}, {mean(rec):.3f}')
     # gsb_window_model.save_results(pre, rec)
     # gsb_window_model.save_model('saved_models')
-
     """
-    node2vec = Node2Vec(G, dimensions=64, workers=4)
-
+    from node2vec import Node2Vec
+    
+    node2vec = Node2Vec(gsb_model.graph, dimensions=64, workers=4)
+    
     WINDOW = 10 # Node2Vec fit window
-    MIN_COUNT = 1 # Node2Vec min. count
+    MIN_COUNT = 2 # Node2Vec min. count
     BATCH_WORDS = 4 # Node2Vec batch words
 
-    model = g_emb.fit(
+    model = node2vec.fit(
         vector_size = 16,
         window=WINDOW,
         min_count=MIN_COUNT,
         batch_words=BATCH_WORDS
     )
 
-    input_node = 'infection'
+    input_node = 'a'
     for s in model.wv.most_similar(input_node, topn=10):
         print(s)
-"""
 
 
-
+    gsb_model.load_model()
+    """
 # TODO: testing framework, logging result handling
 # TODO: fix set based calculation weights and test it with the summing one
 # TODO: implement vazirgiannis window and ranking (github: gowpy)
