@@ -1,7 +1,7 @@
 from networkx import Graph, set_node_attributes, get_node_attributes, to_numpy_array, is_empty
 from numpy import array, dot, fill_diagonal, zeros
 from networkx.readwrite import json_graph
-from math import log2
+from math import log2, log
 from json import dumps, load
 from pickle import load, dump
 import infre.helpers.utilities as utl
@@ -37,13 +37,11 @@ class GSB(BaseIRModel):
 
         # for each query
         for i, query in enumerate(queries, start=1):
-        
-            print(f"=> Query {i} of {len(queries)}")
 
             # apply apriori to find frequent termsets
             freq_termsets = apriori(query, inv_index, min_freq=mf)
             
-            print(f"Query length: {len(query)} | Frequent Termsets: {len(freq_termsets)}")
+            print(f"Query {i}/{len(queries)}: len = {len(query)}, frequent = {len(freq_termsets)}")
             
             # tns_i weight for each termset produced by query
             self.tns.append(self._tnsi(freq_termsets))
@@ -84,8 +82,7 @@ class GSB(BaseIRModel):
             # precision | recall of ranking
             pre, rec = precision_recall(retrieved_docs.keys(), rel)
 
-            print(f"=> Query {i+1} of {num_of_q}")
-            print(f'Precision: {pre:.3f} | Recall: {rec:.3f}')
+            print(f"=> Query {i+1}/{num_of_q}, precision = {pre:.3f}, recall = {rec:.3f}")
 
             self.precision.append(round(pre, 3))
             self.recall.append(round(rec, 3))
@@ -123,14 +120,10 @@ class GSB(BaseIRModel):
     def doc2adj(self, document):
 
         # get list of term frequencies
-        rows = array(list(document.tf.values()))
-
-        # reshape list to column and row vector
-        row = rows.reshape(1, rows.shape[0]).T
-        col = rows.reshape(rows.shape[0], 1).T
+        rows = array(list(document.tf.values())).reshape((-1, 1))
 
         # create adjecency matrix by dot product
-        adj_matrix = dot(row, col)
+        adj_matrix = dot(rows, rows.T)
 
         # calculate Win weights (diagonal terms)
         win = [(w * (w + 1) * 0.5) for w in rows]
@@ -172,8 +165,43 @@ class GSB(BaseIRModel):
         # set them as node attr
         set_node_attributes(union, w_in, 'weight')
 
-        # remove in-wards edges
+        # remove self edges
         for n in union.nodes(): union.remove_edge(n, n)
+    
+        from networkx import to_numpy_array
+        # from sklearn.cluster import SpectralClustering
+        from infre.tools import SpectralClustering
+
+        # Cluster the nodes using spectral clustering
+        sc = SpectralClustering(n_clusters=50, affinity='precomputed', assign_labels='discretize')
+        
+        adj_matrix = to_numpy_array(union)
+        labels, _embeddings = sc.fit_predict(adj_matrix)
+
+        # Remove edges between nodes in different clusters
+        for u, v in union.edges():
+            c, w = self.collection.inverted_index[u]['id'], self.collection.inverted_index[v]['id']
+
+            if labels[c] != labels[w]:
+                # union.add_node(u, cluster=labels[c])
+                # union.add_node(v, cluster=labels[w])
+                union.remove_edge(u, v)
+
+        for node in union.nodes():
+            idx = self.collection.inverted_index[node]['id']
+            union.add_node(node, cluster=labels[idx])
+        # import matplotlib.pyplot as plt
+        # import numpy as np
+        
+        # dim reduction with SVD
+        # from sklearn.decomposition  import PCA
+        # embSvd = PCA(2).fit_transform(_embeddings)
+
+        # for i in np.unique(labels):
+        #     plt.scatter(embSvd[labels == i, 0], embSvd[labels == i, 1], label=i)
+        # plt.show()
+        # print("Dellta average")
+        # print(sum(value for _, value in union.degree()) / union.number_of_nodes())
 
         return union
         

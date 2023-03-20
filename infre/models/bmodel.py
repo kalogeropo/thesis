@@ -96,7 +96,7 @@ class BaseIRModel(ABC):
             for id, tfs in temp.items():
                 tsf_ij[i, id-1] = round((1 + log2(min(tfs))), 3)
         
-        return array(tsf_ij)
+        return tsf_ij
 
 
     # get cos similarity for each document-query pair

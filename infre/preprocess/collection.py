@@ -134,7 +134,8 @@ class Collection():
 
         try:
             # open file and read as dict while reconstructing the data as a dictionary
-            with open(path) as f: self.inverted_index = load(f)
+            with open(path) as f:
+                self.inverted_index = load(f)
 
         except FileNotFoundError:
             raise('There is no such file to load collection.')
@@ -160,14 +161,14 @@ class Collection():
     @staticmethod
     def preprocess(document_terms):
         
-        # from nltk.corpus import stopwords
+        from nltk.corpus import stopwords
         # from nltk.stem import WordNetLemmatizer
         
         punc_free_terms = simple_preprocess(' '.join(term for term in document_terms), min_len=1, max_len=30)
         
-        # stop_words = stopwords.words('english')
-        # filtered_words = [term for term in punc_free_terms if term not in stop_words]
-        
+        stop_words = stopwords.words('english')
+        filtered_words = [term for term in punc_free_terms if term not in stop_words]
+        return filtered_words
         # defining the object for Lemmatization
         # wordnet_lemmatizer = WordNetLemmatizer()
         # lemm_terms = [wordnet_lemmatizer.lemmatize(term) for term in filtered_words]

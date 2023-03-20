@@ -2,37 +2,50 @@ from infre.models import SetBased, GSB
 from numpy import mean
 from networkx import to_numpy_array
 from infre.preprocess import Collection
-
+from infre.helpers.functions import generate_colors
+import networkx as nx
+import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 
     # queries = [['a', 'b'], ['a', 'b', 'd', 'n'], ['b', 'h', 'g', 'l', 'm']]
-    # rel = [[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 5]]
+    # rels = [[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 5]]
 
     path = 'collections/CF/docs'
     ######### example of laod #############
     # sb_model = SetBased(collection=None).load_model(dir='saved models')
-    # print(sb_model.collection.inverted_index)
 
     # load queries, relevant documents
-    queries, rel = Collection.load_qd('collections/CF')
+    queries, rels = Collection.load_qd('collections/CF')
 
     # create collection object
     # most needed attrs: inverted index and size of collection
     col = Collection(path).create()
-
+    
     ########## from scratch creation ###########
     ########## SET BASED ####################
-    sb_model = SetBased(col).fit(queries)
-    pre, rec = sb_model.evaluate(rel)
-    print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}')
+    # sb_model = SetBased(col).fit(queries)
+    # pre, rec = sb_model.evaluate(rels)
+    # print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}')
     # sb_model.save_results(pre, rec)
     # sb_model.save_model('saved_models')
    
     ########## GRAPHICAL SET BASED ####################
     gsb_model = GSB(col).fit(queries)
-    pre, rec = gsb_model.evaluate(rel)
+    pre, rec = gsb_model.evaluate(rels)
+
     print(f'GSB: {mean(pre):.3f}, {mean(rec):.3f}')
+
+    print(gsb_model.graph.number_of_nodes(), gsb_model.graph.number_of_edges())
+
+    # Assign a random color to each node based on its cluster
+    n_clusters = len(set([v["cluster"] for _, v in gsb_model.graph.nodes(data=True)]))
+    colors = generate_colors(n_clusters)
+    # color_map = {v["cluster"]: colors[i] for i, (_, v) in enumerate(gsb_model.graph.nodes(data=True))}
+
+    # Draw the graph with nodes colored by their clusters
+    #nx.draw_networkx(gsb_model.graph, with_labels=False, node_color=[colors[v["cluster"]] for _, v in gsb_model.graph.nodes(data=True)])
+    #plt.show()
     # gsb_model.save_results(pre, rec)
     # gsb_model.save_model('saved_models')
 
@@ -58,13 +71,14 @@ if __name__ == '__main__':
         batch_words=BATCH_WORDS
     )
 
-    input_node = 'a'
+    input_node = 'CF'
     for s in model.wv.most_similar(input_node, topn=10):
         print(s)
 
 
     gsb_model.load_model()
     """
+   
 # TODO: testing framework, logging result handling
 # TODO: fix set based calculation weights and test it with the summing one
 # TODO: implement vazirgiannis window and ranking (github: gowpy)
