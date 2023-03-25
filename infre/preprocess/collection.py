@@ -33,13 +33,22 @@ class Collection():
     def create(self):
         
         if not self.docs:
-            self.docs = self._documents()
+            # self.docs = self._documents()
+            # docs = []
 
+            # generator object to iter filenames
+            filenames = (join(self.path, f) for f in listdir(self.path))
+
+            # generator object to iter Document objects
+            for filename in filenames: 
+                self.docs += [Document(filename)]
+        
+        # make inverted index
         self.inverted_index = self.create_inverted_index()
 
         return self    
 
-
+    """
     def _documents(self):
 
         docs = []
@@ -52,7 +61,7 @@ class Collection():
 
         return docs
 
-    """
+
     def docs(self):
     
         # generator object to iter filenames
@@ -92,10 +101,11 @@ class Collection():
 
         return inv_index
 
-    
-    def get_inverted_index(self):
+    """
+    @property
+    def inverted_index(self):
         return self.inverted_index
-
+    """
 
     def create_directory(self):
         # check if exists else create directories

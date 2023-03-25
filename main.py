@@ -1,4 +1,4 @@
-from infre.models import SetBased, GSB
+from infre.models import SetBased, GSB, ConGSB
 from numpy import mean
 from networkx import to_numpy_array
 from infre.preprocess import Collection
@@ -21,37 +21,45 @@ if __name__ == '__main__':
     # create collection object
     # most needed attrs: inverted index and size of collection
     col = Collection(path).create()
-    
-    ########## from scratch creation ###########
+    print("Collection Done!")
+    """
     ########## SET BASED ####################
-    # sb_model = SetBased(col).fit(queries)
-    # pre, rec = sb_model.evaluate(rels)
-    # print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}')
+    sb_model = SetBased(col).fit(queries)
+    pre, rec = sb_model.evaluate(rels)
+    print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}')
+    
     # sb_model.save_results(pre, rec)
     # sb_model.save_model('saved_models')
-   
+   """
     ########## GRAPHICAL SET BASED ####################
     gsb_model = GSB(col).fit(queries)
     pre, rec = gsb_model.evaluate(rels)
-
+    
     print(f'GSB: {mean(pre):.3f}, {mean(rec):.3f}')
+    # gsb_model.save_results(pre, rec)
+    # gsb_model.save_model('saved_models')
+    
+    ########## GRAPHICAL SET BASED WITH WIWNDOW ####################
+    con_gsb_model = ConGSB(col).fit(queries)
+    pre, rec = con_gsb_model.evaluate(rels)
 
-    print(gsb_model.graph.number_of_nodes(), gsb_model.graph.number_of_edges())
+    print(f'Conceptualized GSB: {mean(pre):.3f}, {mean(rec):.3f}')
+    print(con_gsb_model.graph.number_of_nodes(), con_gsb_model.graph.number_of_edges())
+    # gsb_window_model.save_results(pre, rec)
+    # gsb_window_model.save_model('saved_models')
 
     # Assign a random color to each node based on its cluster
-    n_clusters = len(set([v["cluster"] for _, v in gsb_model.graph.nodes(data=True)]))
-    colors = generate_colors(n_clusters)
+    # n_clusters = len(set([v["cluster"] for _, v in gsb_model.graph.nodes(data=True)]))
+    # colors = generate_colors(n_clusters)
     # color_map = {v["cluster"]: colors[i] for i, (_, v) in enumerate(gsb_model.graph.nodes(data=True))}
 
     # Draw the graph with nodes colored by their clusters
-    #nx.draw_networkx(gsb_model.graph, with_labels=False, node_color=[colors[v["cluster"]] for _, v in gsb_model.graph.nodes(data=True)])
-    #plt.show()
-    # gsb_model.save_results(pre, rec)
-    # gsb_model.save_model('saved_models')
+    # nx.draw_networkx(gsb_model.graph, with_labels=False, node_color=[colors[v["cluster"]] for _, v in gsb_model.graph.nodes(data=True)])
+    # plt.show()
 
     ########## GRAPHICAL SET BASED WITH WIWNDOW ####################
     # gsb_window_model = GSBWindow(col, window=10).fit(queries)
-    # pre, rec = gsb_window_model.evaluate(rel)
+    # pre, rec = gsb_window_model.evaluate(rels)
     # print(f'GSBW: {mean(pre):.3f}, {mean(rec):.3f}')
     # gsb_window_model.save_results(pre, rec)
     # gsb_window_model.save_model('saved_models')
