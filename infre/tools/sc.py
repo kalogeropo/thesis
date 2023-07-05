@@ -28,20 +28,8 @@ class SpectralClustering:
         else:
             raise ValueError("Invalid affinity parameter")
         
-        """
-        # Compute Laplacian matrix
-        D = np.diag(np.sum(A, axis=1))
-        L = D - A
-        
-        # Compute eigenvectors and eigenvalues of Laplacian matrix
-        eigvals, eigvecs = np.linalg.eig(L)
-        idx = np.argsort(eigvals)[:self.n_clusters]
-        embedding = eigvecs[:, idx]
-        """
-        
         emb_model = SpectralEmbedding(n_components=self.n_clusters, affinity=self.affinity, n_jobs=-1)
         embedding = emb_model.fit_transform(A)
-        # print(embedding)
 
         # Cluster using k-means or discretize
         if self.assign_labels == 'kmeans':

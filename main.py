@@ -1,10 +1,11 @@
-from infre.models import SetBased, GSB, ConGSB
+from infre.models import SetBased, GSB, GSBWindow, ConGSB
 from numpy import mean
 from networkx import to_numpy_array
 from infre.preprocess import Collection
 from infre.helpers.functions import generate_colors
 import networkx as nx
 import matplotlib.pyplot as plt
+from infre.utils import prune_graph
 
 if __name__ == '__main__':
 
@@ -22,29 +23,64 @@ if __name__ == '__main__':
     # most needed attrs: inverted index and size of collection
     col = Collection(path).create()
     print("Collection Done!")
+    
     """
     ########## SET BASED ####################
     sb_model = SetBased(col).fit(queries)
     pre, rec = sb_model.evaluate(rels)
-    print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}')
+    print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}') # 0.166 (raw queries)
     
     # sb_model.save_results(pre, rec)
     # sb_model.save_model('saved_models')
-   """
-    ########## GRAPHICAL SET BASED ####################
+    
+    
+    ########## GRAPHICAL SET BASED #################### .188 (raw)
     gsb_model = GSB(col).fit(queries)
     pre, rec = gsb_model.evaluate(rels)
     
-    print(f'GSB: {mean(pre):.3f}, {mean(rec):.3f}')
-    # gsb_model.save_results(pre, rec)
-    # gsb_model.save_model('saved_models')
+    # nghrs = gsb_model._number_of_nbrs()
+    # print(max(nghrs.values()))
+    # print(len(nghrs))
     
+    print(f'GSB: {mean(pre):.3f}, {mean(rec):.3f}')
+    # # gsb_model.save_results(pre, rec)
+    # # gsb_model.save_model('saved_models')
+    # print(gsb_model.graph.number_of_nodes(), gsb_model.graph.number_of_edges())
+    
+    ########## GRAPHICAL SET BASED WITH PRUNING #################### .207 (raw)
+    graph, _ = prune_graph(gsb_model.graph, col)
+
+    gsb_pruned_model = GSB(col, graph).fit(queries)
+    pre, rec = gsb_pruned_model.evaluate(rels)
+    print(f'GSB Pruned: {mean(pre):.3f}, {mean(rec):.3f}')
+    """
+
     ########## GRAPHICAL SET BASED WITH WIWNDOW ####################
+    gsb_window_model = GSBWindow(col, window=10).fit(queries)
+    pre, rec = gsb_window_model.evaluate(rels)
+    print(f'GSBW: {mean(pre):.3f}, {mean(rec):.3f}')
+    # gsb_window_model.save_results(pre, rec)
+    # gsb_window_model.save_model('saved_models')
+
+
+    ########## GRAPHICAL SET BASED WITH WIWNDOW AND PRUNING ####################
+    graph, _ = prune_graph(gsb_window_model.graph, col)
+
+    gsbw_pruned_model = GSBWindow(col, 10, graph).fit(queries)
+    pre, rec = gsbw_pruned_model.evaluate(rels)
+    print(f'GSB Window Pruned: {mean(pre):.3f}, {mean(rec):.3f}')
+
+
+    """
+    ########## CONCEPTUALIZED GRAPHICAL SET BASED ####################  .226 (raw queries)
     con_gsb_model = ConGSB(col).fit(queries)
     pre, rec = con_gsb_model.evaluate(rels)
 
     print(f'Conceptualized GSB: {mean(pre):.3f}, {mean(rec):.3f}')
     print(con_gsb_model.graph.number_of_nodes(), con_gsb_model.graph.number_of_edges())
+    """
+    
+    """
     # gsb_window_model.save_results(pre, rec)
     # gsb_window_model.save_model('saved_models')
 
@@ -56,14 +92,9 @@ if __name__ == '__main__':
     # Draw the graph with nodes colored by their clusters
     # nx.draw_networkx(gsb_model.graph, with_labels=False, node_color=[colors[v["cluster"]] for _, v in gsb_model.graph.nodes(data=True)])
     # plt.show()
+ 
 
-    ########## GRAPHICAL SET BASED WITH WIWNDOW ####################
-    # gsb_window_model = GSBWindow(col, window=10).fit(queries)
-    # pre, rec = gsb_window_model.evaluate(rels)
-    # print(f'GSBW: {mean(pre):.3f}, {mean(rec):.3f}')
-    # gsb_window_model.save_results(pre, rec)
-    # gsb_window_model.save_model('saved_models')
-    """
+
     from node2vec import Node2Vec
     
     node2vec = Node2Vec(gsb_model.graph, dimensions=64, workers=4)

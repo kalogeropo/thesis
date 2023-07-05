@@ -1,5 +1,14 @@
+# TODO: find avg weight of edges and use it as condition in edge removal
+# TODO: cluster size variance 
+# TODO: Incorporate cluster graph in window gsb
+# TODO: CONCEPTS ALSO IN WINDOWED GSB
+
+# TODO: sentiment analysis - by product
+# 1. set-based, 2. gsb 3. pgsb 4. cgsb 5. cwgsb 6. 
+
 from infre.models import GSB
 from numpy import zeros
+from infre.utils import prune_graph
 
 class ConGSB(GSB):
     def __init__(self, collection):
@@ -7,17 +16,17 @@ class ConGSB(GSB):
 
         self.model = self._model()
 
+        self.graph, self.embeddings = prune_graph(self.graph, collection)
+
         self._cnwk()
         # This model introduces a conceputalize aspect
         # each term have each own concept
         # TODO: probably insert into inverted index
         self.concepts = []
 
-
-    
     def _model(self): return __class__.__name__
 
-
+    """
     def union_graph(self, kcore=[], kcore_bool=False):
         union = super().union_graph(kcore, kcore_bool)
 
@@ -30,7 +39,7 @@ class ConGSB(GSB):
         
         adj_matrix = to_numpy_array(union)
         labels, _embeddings = sc.fit_predict(adj_matrix)
-
+        
         # Remove edges between nodes in different clusters
         for u, v in union.edges():
             c, w = self.collection.inverted_index[u]['id'], self.collection.inverted_index[v]['id']
@@ -40,24 +49,26 @@ class ConGSB(GSB):
                 # union.add_node(v, cluster=labels[w])
                 union.remove_edge(u, v)
 
-        # assigne node clusters
+        # assign node clusters
         for node in union.nodes():
             idx = self.collection.inverted_index[node]['id']
             union.add_node(node, cluster=labels[idx])
-        # # import matplotlib.pyplot as plt
-        # # import numpy as np
+
+        # import matplotlib.pyplot as plt
+        # import numpy as np
         
         # # dim reduction with SVD
-        # # from sklearn.decomposition  import PCA
-        # # embSvd = PCA(2).fit_transform(_embeddings)
+        # from sklearn.decomposition  import PCA
+        # embSvd = PCA(2).fit_transform(_embeddings)
 
-        # # for i in np.unique(labels):
-        # #     plt.scatter(embSvd[labels == i, 0], embSvd[labels == i, 1], label=i)
-        # # plt.show()
-        # # print("Dellta average")
-        # # print(sum(value for _, value in union.degree()) / union.number_of_nodes())
+        # for i in np.unique(labels):
+        #     plt.scatter(embSvd[labels == i, 0], embSvd[labels == i, 1], label=i)
+        # plt.show()
+        # print("Dellta average")
+        # print(sum(value for _, value in union.degree()) / union.number_of_nodes())
 
         return union
+    """
     
 
     def _cnwk(self):

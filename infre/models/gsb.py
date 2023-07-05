@@ -14,19 +14,17 @@ from infre.models import BaseIRModel
 
 
 class GSB(BaseIRModel):
-    def __init__(self, collection):
+    def __init__(self, collection, graph=None):
         super().__init__(collection)
         
         # model name
         self.model = self._model()
 
         # empty graph to be filled by union
-        self.graph = self.union_graph()
+        self.graph = self.union_graph() if not graph else graph
 
         # NW Weight of GSB
         self._nwk()
-
-        # self.tns = []
 
 
     def _model(self): return __class__.__name__
@@ -111,7 +109,7 @@ class GSB(BaseIRModel):
 
         # remove self edges
         for n in union.nodes(): union.remove_edge(n, n)
-
+        
         return union
         
     

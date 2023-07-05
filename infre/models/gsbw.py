@@ -3,13 +3,13 @@ from infre import retrieval
 
 from infre.models import GSB
 class GSBWindow(GSB):
-    def __init__(self, collection, window=8):
+    def __init__(self, collection, window=8, graph=None):
         if isinstance(window, int):
             self.window = window
         elif isinstance(window, float):
             num_of_words = len(self.collection.inverted_index)
             self.window = int(num_of_words * window) + 1
-        super().__init__(collection)
+        super().__init__(collection, graph)
 
 
     def class_name(self):
