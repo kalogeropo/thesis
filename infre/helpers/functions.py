@@ -16,7 +16,7 @@ def generate_random_walk(graph, start_node, walk_length, transition_probs):
     - walk: a list of nodes visited in the random walk
     """
     walk = [start_node]
-    for i in range(walk_length-1):
+    for _ in range(walk_length-1):
         current_node = walk[-1]
         neighbors = list(graph.neighbors(current_node))
         if len(neighbors) == 0:
@@ -82,10 +82,104 @@ def generate_random_walks(graph, walk_length, num_walks, p, q):
 
 
 import random
-
 def generate_colors(n):
     colors = []
     for _ in range(n):
         color_code = "#{:02x}{:02x}{:02x}".format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
         colors.append(color_code)
     return colors
+
+
+def prune_graph(graph, collection, n_clstrs=100, condition={}):
+
+    # import needed functions
+    from networkx import to_numpy_array
+    from infre.tools import SpectralClustering
+    from infre.metrics import cosine_similarity
+
+    # Cluster the nodes using spectral clustering
+    sc = SpectralClustering(n_clusters=n_clstrs, affinity='precomputed', assign_labels='kmeans')
+    
+    adj_matrix = to_numpy_array(graph)
+    labels, _embeddings = sc.fit_predict(adj_matrix)
+
+    # Remove edges between nodes in different clusters
+    for u, v in graph.edges():
+        c, w = collection.inverted_index[u]['id'], collection.inverted_index[v]['id']
+
+        try:
+            cond = list(condition.keys())[0]
+            theshold = list(condition.values())[0]
+            
+            if cond == 'edge':
+                edge_weight = graph.get_edge_data(u, v)['weight']
+                flag = edge_weight <= theshold
+            elif cond == 'sim':
+                flag = cosine_similarity(_embeddings[c, :],  _embeddings[w, :]) <= theshold
+
+        except IndexError:
+            flag = 0
+
+        if labels[c] != labels[w] or flag:
+            graph.remove_edge(u, v)
+
+
+    # assign node clusters
+    for node in graph.nodes():
+        idx = collection.inverted_index[node]['id']
+        graph.add_node(node, cluster=labels[idx])
+
+    # convert emebeddings 2D array to a labeled df for future visual exploitation
+    from pandas import DataFrame
+    embeddings = DataFrame(_embeddings)
+    embeddings['labels'] = labels
+
+    return graph, embeddings
+
+
+def draw_clusters(graph):
+    from networkx import draw_networkx
+    import matplotlib as plt
+    # Assign a random color to each node based on its cluster
+    n_clusters = len(set([v["cluster"] for _, v in graph.nodes(data=True)]))
+    colors = generate_colors(n_clusters)
+
+    color_map = {v["cluster"]: colors[i] for i, (_, v) in enumerate(graph.nodes(data=True))}
+
+    # Draw the graph with nodes colored by their clusters
+    draw_networkx(graph, with_labels=False, node_color=[colors[v["cluster"]] for _, v in graph.nodes(data=True)])
+    plt.show()
+
+
+def plot_scatter_pca(df, c_name, cmap_set="plasma"):
+    """
+    Visualizes the values of the component columns of the DataFrame according to its column
+    that includes the labels.
+
+    Args:
+        df: The DataFrame that contains the transformed data after the PCA procedure.
+        c_name: The name of the column that includes the labels.
+        cmap_set: The format of the plot.
+
+    Returns:
+    """
+
+    import matplotlib.pyplot as plt
+
+    if len(df.columns) == 3:
+        plt.style.use('seaborn-v0_8')
+        plt.figure(figsize=(16, 8))
+        scatter = plt.scatter(df.iloc[:, 0], df.iloc[:, 1], c=df[c_name], cmap=cmap_set)
+        plt.xlabel('First principal component')
+        plt.ylabel('Second Principal Component')
+        plt.legend(*scatter.legend_elements(), title=c_name)
+
+    elif len(df.columns) == 4:
+        plt.style.use('seaborn-v0_8')
+        fig = plt.figure(figsize=(16, 8))
+        ax = fig.add_subplot(111, projection='3d')
+        scatter = ax.scatter(df.iloc[:, 0], df.iloc[:, 1], df.iloc[:, 2], c=df[c_name], cmap=cmap_set)
+        ax.set_xlabel('First principal component')
+        ax.set_ylabel('Second Principal Component')
+        ax.set_zlabel('Third Principal Component')
+        ax.legend(*scatter.legend_elements(), title=c_name)

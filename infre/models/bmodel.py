@@ -41,16 +41,6 @@ class BaseIRModel(ABC):
 
 
     def _model(self): return __class__.__name__
-    
-
-    # @abstractclassmethod
-    # def fit(self):
-    #    pass
-
-
-    #@abstractclassmethod
-    #def evaluate(self):
-    #    pass
 
 
     @abstractclassmethod
@@ -58,7 +48,7 @@ class BaseIRModel(ABC):
         pass
 
     @abstractclassmethod
-    def _vectorizer(self, tf_ij, idf, *args):
+    def _vectorizer(self, tsf_ij, idf, *args):
         pass
 
     

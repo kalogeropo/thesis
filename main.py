@@ -1,11 +1,11 @@
-from infre.models import SetBased, GSB, GSBWindow, ConGSB
+from infre.models import SetBased, GSB, GSBWindow, ConGSB, ConGSBWindow
 from numpy import mean
 from networkx import to_numpy_array
 from infre.preprocess import Collection
 from infre.helpers.functions import generate_colors
 import networkx as nx
 import matplotlib.pyplot as plt
-from infre.utils import prune_graph
+from infre.helpers.functions import prune_graph
 
 if __name__ == '__main__':
 
@@ -55,6 +55,7 @@ if __name__ == '__main__':
     print(f'GSB Pruned: {mean(pre):.3f}, {mean(rec):.3f}')
     """
 
+    """
     ########## GRAPHICAL SET BASED WITH WIWNDOW ####################
     gsb_window_model = GSBWindow(col, window=10).fit(queries)
     pre, rec = gsb_window_model.evaluate(rels)
@@ -63,60 +64,70 @@ if __name__ == '__main__':
     # gsb_window_model.save_model('saved_models')
 
 
-    ########## GRAPHICAL SET BASED WITH WIWNDOW AND PRUNING ####################
+    ########## GRAPHICAL SET BASED WIWNDOW WITH PRUNING ####################
     graph, _ = prune_graph(gsb_window_model.graph, col)
 
     gsbw_pruned_model = GSBWindow(col, 10, graph).fit(queries)
     pre, rec = gsbw_pruned_model.evaluate(rels)
     print(f'GSB Window Pruned: {mean(pre):.3f}, {mean(rec):.3f}')
-
-
-    """
-    ########## CONCEPTUALIZED GRAPHICAL SET BASED ####################  .226 (raw queries)
-    con_gsb_model = ConGSB(col).fit(queries)
-    pre, rec = con_gsb_model.evaluate(rels)
-
-    print(f'Conceptualized GSB: {mean(pre):.3f}, {mean(rec):.3f}')
-    print(con_gsb_model.graph.number_of_nodes(), con_gsb_model.graph.number_of_edges())
     """
     
+    ######## CONCEPTUALIZED GRAPHICAL SET BASED ####################  .226 (raw queries)
+    # con_gsb_model = ConGSB(col, {'sim': 0.3}).fit(queries)
+    # pre, rec = con_gsb_model.evaluate(rels)
+
+    # print(f'Conceptualized GSB: {mean(pre):.3f}, {mean(rec):.3f}')
+    # print(con_gsb_model.graph.number_of_nodes(), con_gsb_model.graph.number_of_edges())
+    
+
+    ########## CONCEPTUALIZED GRAPHICAL SET BASED Window ####################  
+    con_gsbw_model = ConGSBWindow(col, window=8).fit(queries)
+    pre, rec = con_gsbw_model.evaluate(rels)
+
+    print(f'CGSBW: {mean(pre):.3f}, {mean(rec):.3f}')
+    print(con_gsbw_model.graph.number_of_nodes(), con_gsbw_model.graph.number_of_edges())
+
     """
-    # gsb_window_model.save_results(pre, rec)
-    # gsb_window_model.save_model('saved_models')
+    import numpy as np
 
-    # Assign a random color to each node based on its cluster
-    # n_clusters = len(set([v["cluster"] for _, v in gsb_model.graph.nodes(data=True)]))
-    # colors = generate_colors(n_clusters)
-    # color_map = {v["cluster"]: colors[i] for i, (_, v) in enumerate(gsb_model.graph.nodes(data=True))}
+    # dim reduction with SVD
+    from sklearn.decomposition  import PCA
+    embSvd = PCA(2).fit_transform(_embeddings)
 
-    # Draw the graph with nodes colored by their clusters
-    # nx.draw_networkx(gsb_model.graph, with_labels=False, node_color=[colors[v["cluster"]] for _, v in gsb_model.graph.nodes(data=True)])
-    # plt.show()
- 
+    for i in np.unique(labels):
+        plt.scatter(embSvd[labels == i, 0], embSvd[labels == i, 1], label=i)
+    plt.show()
+    print("Dellta average")
+    print(sum(value for _, value in union.degree()) / union.number_of_nodes())
+    """
 
-
+    from time import time
     from node2vec import Node2Vec
-    
-    node2vec = Node2Vec(gsb_model.graph, dimensions=64, workers=4)
-    
-    WINDOW = 10 # Node2Vec fit window
-    MIN_COUNT = 2 # Node2Vec min. count
-    BATCH_WORDS = 4 # Node2Vec batch words
 
-    model = node2vec.fit(
-        vector_size = 16,
-        window=WINDOW,
-        min_count=MIN_COUNT,
-        batch_words=BATCH_WORDS
-    )
+    start = time()
 
-    input_node = 'CF'
-    for s in model.wv.most_similar(input_node, topn=10):
-        print(s)
+    # Define the embedding dimensions
+    dimensions = 64
+
+    # Create a Node2Vec instance with specified dimensions
+    node2vec = Node2Vec(con_gsbw_model.graph, dimensions=dimensions, workers=4)
+
+    # Train the model and generate the walks
+    model = node2vec.fit(window=10, min_count=2, batch_words=4)
+
+    # Use the trained model to find most similar nodes
+    input_node = 'pseudomonas'
+    similar_nodes = model.wv.most_similar(input_node, topn=10)
+
+    # Print the most similar nodes
+    for node, similarity in similar_nodes:
+        print(node, similarity)
 
 
-    gsb_model.load_model()
-    """
+
+    print(time()-start)
+    # gsb_model.load_model()
+
    
 # TODO: testing framework, logging result handling
 # TODO: fix set based calculation weights and test it with the summing one

@@ -26,6 +26,9 @@ class GSB(BaseIRModel):
         # NW Weight of GSB
         self._nwk()
 
+        # average wout edge weight
+        self.avg_wout = sum(self._wout().values()) / (2 * self.graph.number_of_edges())
+        print(self.avg_wout)
 
     def _model(self): return __class__.__name__
 
