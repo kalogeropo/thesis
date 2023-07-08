@@ -1,4 +1,4 @@
-from infre.models import SetBased, GSB, GSBWindow, ConGSB, ConGSBWindow
+from infre.models import SetBased, GSB, GSBWindow, PGSB, PGSBW, ConGSB, ConGSBWindow
 from numpy import mean
 from networkx import to_numpy_array
 from infre.preprocess import Collection
@@ -21,8 +21,7 @@ if __name__ == '__main__':
 
     # create collection object
     # most needed attrs: inverted index and size of collection
-    col = Collection(path).create()
-    print("Collection Done!")
+    col = Collection(path).create(first=-1)
     
     """
     ########## SET BASED ####################
@@ -38,22 +37,22 @@ if __name__ == '__main__':
     gsb_model = GSB(col).fit(queries)
     pre, rec = gsb_model.evaluate(rels)
     
-    # nghrs = gsb_model._number_of_nbrs()
-    # print(max(nghrs.values()))
-    # print(len(nghrs))
-    
     print(f'GSB: {mean(pre):.3f}, {mean(rec):.3f}')
-    # # gsb_model.save_results(pre, rec)
-    # # gsb_model.save_model('saved_models')
-    # print(gsb_model.graph.number_of_nodes(), gsb_model.graph.number_of_edges())
+    # gsb_model.save_results(pre, rec)
+    # gsb_model.save_model('saved_models')
+    print(gsb_model.graph.number_of_nodes(), gsb_model.graph.number_of_edges())
     
     ########## GRAPHICAL SET BASED WITH PRUNING #################### .207 (raw)
-    graph, _ = prune_graph(gsb_model.graph, col)
+    # graph, _ = prune_graph(gsb_model.graph, col, n_clstrs=100)
 
-    gsb_pruned_model = GSB(col, graph).fit(queries)
-    pre, rec = gsb_pruned_model.evaluate(rels)
-    print(f'GSB Pruned: {mean(pre):.3f}, {mean(rec):.3f}')
-    """
+    # gsb_pruned_model = GSB(col, graph).fit(queries)
+    # pre, rec = gsb_pruned_model.evaluate(rels)
+    # print(f'GSB Pruned: {mean(pre):.3f}, {mean(rec):.3f}')
+    
+    pgsb_model = PGSB(col, clusters=150).fit(queries)
+    pre, rec = pgsb_model.evaluate(rels)
+    
+    print(f'PGSB: {mean(pre):.3f}, {mean(rec):.3f}')
 
     """
     ########## GRAPHICAL SET BASED WITH WIWNDOW ####################
@@ -63,31 +62,36 @@ if __name__ == '__main__':
     # gsb_window_model.save_results(pre, rec)
     # gsb_window_model.save_model('saved_models')
 
-
+    
     ########## GRAPHICAL SET BASED WIWNDOW WITH PRUNING ####################
-    graph, _ = prune_graph(gsb_window_model.graph, col)
+    graph, _ = prune_graph(gsb_window_model.graph, col, n_clstrs=100)
 
     gsbw_pruned_model = GSBWindow(col, 10, graph).fit(queries)
     pre, rec = gsbw_pruned_model.evaluate(rels)
     print(f'GSB Window Pruned: {mean(pre):.3f}, {mean(rec):.3f}')
-    """
     
-    ######## CONCEPTUALIZED GRAPHICAL SET BASED ####################  .226 (raw queries)
-    # con_gsb_model = ConGSB(col, {'sim': 0.3}).fit(queries)
+
+    pgsbw_model = PGSBW(col, window=10, clusters=100).fit(queries)
+    pre, rec = pgsbw_model.evaluate(rels)
+    
+    print(f'PGSBW: {mean(pre):.3f}, {mean(rec):.3f}')
+    
+    ########## CONCEPTUALIZED GRAPHICAL SET BASED ####################  .226 (raw queries)
+    # con_gsb_model = ConGSB(col, clusters=100, cond={'sim': 0.3}).fit(queries)
     # pre, rec = con_gsb_model.evaluate(rels)
 
-    # print(f'Conceptualized GSB: {mean(pre):.3f}, {mean(rec):.3f}')
+    # print(f'CGSB: {mean(pre):.3f}, {mean(rec):.3f}')
     # print(con_gsb_model.graph.number_of_nodes(), con_gsb_model.graph.number_of_edges())
     
-
-    ########## CONCEPTUALIZED GRAPHICAL SET BASED Window ####################  
-    con_gsbw_model = ConGSBWindow(col, window=8).fit(queries)
+    """
+    ######### CONCEPTUALIZED GRAPHICAL SET BASED Window ####################  
+    con_gsbw_model = ConGSBWindow(col, window=8, clusters=10, cond={'sim': .7}).fit(queries)
     pre, rec = con_gsbw_model.evaluate(rels)
 
     print(f'CGSBW: {mean(pre):.3f}, {mean(rec):.3f}')
     print(con_gsbw_model.graph.number_of_nodes(), con_gsbw_model.graph.number_of_edges())
 
-    """
+    
     import numpy as np
 
     # dim reduction with SVD

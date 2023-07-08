@@ -90,7 +90,7 @@ def generate_colors(n):
     return colors
 
 
-def prune_graph(graph, collection, n_clstrs=100, condition={}):
+def prune_graph(graph, collection, n_clstrs, condition={}):
 
     # import needed functions
     from networkx import to_numpy_array
@@ -100,8 +100,20 @@ def prune_graph(graph, collection, n_clstrs=100, condition={}):
     # Cluster the nodes using spectral clustering
     sc = SpectralClustering(n_clusters=n_clstrs, affinity='precomputed', assign_labels='kmeans')
     
+    # convert graph to adjacency matrix
     adj_matrix = to_numpy_array(graph)
+    
+    # apply sc
     labels, _embeddings = sc.fit_predict(adj_matrix)
+
+    ##### piece of code to check for clusters distribution
+    clusters = {label: len(labels[labels==label]) for label in np.unique(labels)}
+    print(clusters)
+
+    # edges before pruning
+    init_edges = graph.number_of_edges()
+    # keep trach of deleted edges
+    cut_edges = 0
 
     # Remove edges between nodes in different clusters
     for u, v in graph.edges():
@@ -122,7 +134,10 @@ def prune_graph(graph, collection, n_clstrs=100, condition={}):
 
         if labels[c] != labels[w] or flag:
             graph.remove_edge(u, v)
+            cut_edges += 1
 
+
+    print(f"{cut_edges/init_edges*100} % pruning. {cut_edges} edges were pruned out of {init_edges}.")
 
     # assign node clusters
     for node in graph.nodes():

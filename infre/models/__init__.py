@@ -3,5 +3,7 @@ from .vs import VectorSpace
 from .sb import SetBased
 from .gsb import GSB
 from .gsbw import GSBWindow
-from .congsb import ConGSB
-from .congsbw import ConGSBWindow
+from .pgsb import PGSB
+from .pgsbw import PGSBW
+from .cgsb import ConGSB
+from .cgsbw import ConGSBWindow

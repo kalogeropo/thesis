@@ -4,20 +4,20 @@
 # TODO: CONCEPTS ALSO IN WINDOWED GSB
 
 # TODO: sentiment analysis - by product
-# 1. set-based, 2.gsb 3.wgsb 4.cgsb 5.cwgsb 6. 
+# 1. set-based, 2.gsb 3.gsbw 4.cgsb 5.cwgsb 6. 
 
 from infre.models import GSB
 from numpy import zeros
 from infre.helpers.functions import prune_graph
 
 class ConGSB(GSB):
-    def __init__(self, collection, cond={}):
+    def __init__(self, collection, clusters, cond={}):
         
         super().__init__(collection)
 
         self.model = self._model()
 
-        self.graph, self.embeddings = prune_graph(self.graph, collection, n_clstrs=100, condition=cond)
+        self.graph, self.embeddings = prune_graph(self.graph, collection, n_clstrs=clusters, condition=cond)
 
         self._cnwk()
 

@@ -30,22 +30,35 @@ class Collection():
         self.inverted_index = {}
 
 
-    def create(self):
+    def create(self, first=-1):
         
         if not self.docs:
             # self.docs = self._documents()
             # docs = []
 
+            # number of collection documents
+            n_docs = len(listdir(self.path))
+
+            # define number of docs to be parsed
+            first = n_docs if first == -1 else first
+
             # generator object to iter filenames
             filenames = (join(self.path, f) for f in listdir(self.path))
 
+            parsed = 0
             # generator object to iter Document objects
-            for filename in filenames: 
-                self.docs += [Document(filename)]
-        
+            for filename in filenames:
+                if first > parsed:
+                    self.docs += [Document(filename)]
+                    parsed += 1
+                else:
+                    break
+
         # make inverted index
         self.inverted_index = self.create_inverted_index()
 
+        print(f"Collection Done! {parsed} documents were parsed.")
+        
         return self    
 
     """
