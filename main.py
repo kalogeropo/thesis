@@ -49,49 +49,50 @@ if __name__ == '__main__':
     # pre, rec = gsb_pruned_model.evaluate(rels)
     # print(f'GSB Pruned: {mean(pre):.3f}, {mean(rec):.3f}')
     
-    pgsb_model = PGSB(col, clusters=150).fit(queries)
+    pgsb_model = PGSB(col, clusters=50).fit(queries)
     pre, rec = pgsb_model.evaluate(rels)
     
     print(f'PGSB: {mean(pre):.3f}, {mean(rec):.3f}')
 
     """
     ########## GRAPHICAL SET BASED WITH WIWNDOW ####################
-    gsb_window_model = GSBWindow(col, window=10).fit(queries)
+    gsb_window_model = GSBWindow(col, window=.15).fit(queries)
+    print(gsb_window_model.graph)
+    
     pre, rec = gsb_window_model.evaluate(rels)
     print(f'GSBW: {mean(pre):.3f}, {mean(rec):.3f}')
     # gsb_window_model.save_results(pre, rec)
     # gsb_window_model.save_model('saved_models')
-
     
     ########## GRAPHICAL SET BASED WIWNDOW WITH PRUNING ####################
-    graph, _ = prune_graph(gsb_window_model.graph, col, n_clstrs=100)
+    # graph, _ = prune_graph(gsb_window_model.graph, col, n_clstrs=100)
 
-    gsbw_pruned_model = GSBWindow(col, 10, graph).fit(queries)
-    pre, rec = gsbw_pruned_model.evaluate(rels)
-    print(f'GSB Window Pruned: {mean(pre):.3f}, {mean(rec):.3f}')
+    # gsbw_pruned_model = GSBWindow(col, 10, graph).fit(queries)
+    # pre, rec = gsbw_pruned_model.evaluate(rels)
+    # print(f'GSB Window Pruned: {mean(pre):.3f}, {mean(rec):.3f}')
     
 
-    pgsbw_model = PGSBW(col, window=10, clusters=100).fit(queries)
-    pre, rec = pgsbw_model.evaluate(rels)
+    # pgsbw_model = PGSBW(col, window=7, clusters=50).fit(queries)
+    # pre, rec = pgsbw_model.evaluate(rels)
     
-    print(f'PGSBW: {mean(pre):.3f}, {mean(rec):.3f}')
-    
+    # print(f'PGSBW: {mean(pre):.3f}, {mean(rec):.3f}')
+    """
     ########## CONCEPTUALIZED GRAPHICAL SET BASED ####################  .226 (raw queries)
-    # con_gsb_model = ConGSB(col, clusters=100, cond={'sim': 0.3}).fit(queries)
-    # pre, rec = con_gsb_model.evaluate(rels)
+    con_gsb_model = ConGSB(col, clusters=50, cond={'sim': 0.3}).fit(queries)
+    pre, rec = con_gsb_model.evaluate(rels)
 
-    # print(f'CGSB: {mean(pre):.3f}, {mean(rec):.3f}')
-    # print(con_gsb_model.graph.number_of_nodes(), con_gsb_model.graph.number_of_edges())
+    print(f'CGSB: {mean(pre):.3f}, {mean(rec):.3f}')
+    print(con_gsb_model.graph.number_of_nodes(), con_gsb_model.graph.number_of_edges())
     
     """
     ######### CONCEPTUALIZED GRAPHICAL SET BASED Window ####################  
-    con_gsbw_model = ConGSBWindow(col, window=8, clusters=10, cond={'sim': .7}).fit(queries)
+    con_gsbw_model = ConGSBWindow(col, window=.15, clusters=50, cond={'sim':.2}).fit(queries)
     pre, rec = con_gsbw_model.evaluate(rels)
 
     print(f'CGSBW: {mean(pre):.3f}, {mean(rec):.3f}')
     print(con_gsbw_model.graph.number_of_nodes(), con_gsbw_model.graph.number_of_edges())
-
     
+    """
     import numpy as np
 
     # dim reduction with SVD
@@ -128,11 +129,5 @@ if __name__ == '__main__':
         print(node, similarity)
 
 
-
     print(time()-start)
     # gsb_model.load_model()
-
-   
-# TODO: testing framework, logging result handling
-# TODO: fix set based calculation weights and test it with the summing one
-# TODO: implement vazirgiannis window and ranking (github: gowpy)

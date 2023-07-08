@@ -3,26 +3,25 @@ from infre import retrieval
 
 from infre.models import GSB
 class GSBWindow(GSB):
-    def __init__(self, collection, window=8, graph=None):
-        if isinstance(window, int):
-            self.window = window
-        elif isinstance(window, float):
-            num_of_words = len(self.collection.inverted_index)
-            self.window = int(num_of_words * window) + 1
-        super().__init__(collection, graph)
+    def __init__(self, collection, window=8):
+        self.window = window
+        super().__init__(collection)
 
 
-    def class_name(self):
-        return __class__.__name__
+    def class_name(self): return __class__.__name__
 
 
     # overide basic method with the windowed one
     def doc2adj(self, document):
 
-        windows_size = self.window
+        window_size = - 1
+        if isinstance(self.window, int):
+            window_size = self.window
+        elif isinstance(self.window, float):
+            window_size = int(self.window * len(document.terms))
 
         # create windowed document
-        windowed_doc = document.split_document(windows_size)
+        windowed_doc = document.split_document(window_size)
 
         adj_matrix = zeros(shape=(len(document.tf), len(document.tf)), dtype=int)
         for segment in windowed_doc:

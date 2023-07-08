@@ -1,7 +1,4 @@
-# TODO: find avg weight of edges and use it as condition in edge removal
 # TODO: cluster size variance 
-# TODO: Incorporate cluster graph in window gsb
-# TODO: CONCEPTS ALSO IN WINDOWED GSB
 
 # TODO: sentiment analysis - by product
 # 1. set-based, 2.gsb 3.gsbw 4.cgsb 5.cwgsb 6. 

@@ -14,14 +14,14 @@ from infre.models import BaseIRModel
 
 
 class GSB(BaseIRModel):
-    def __init__(self, collection, graph=None):
+    def __init__(self, collection):
         super().__init__(collection)
         
         # model name
         self.model = self._model()
 
         # empty graph to be filled by union
-        self.graph = self.union_graph() if not graph else graph
+        self.graph = self.union_graph()
 
         # NW Weight of GSB
         self._nwk()
@@ -90,7 +90,7 @@ class GSB(BaseIRModel):
             # get terms of each document
             terms = list(doc.tf.keys())
 
-            # create it's adjecency matrix based on Makris alg
+            # create it's adjacency matrix based on Makris algorithm
             adj_matrix = self.doc2adj(doc)
                 
             for i in range(adj_matrix.shape[0]):
@@ -101,9 +101,10 @@ class GSB(BaseIRModel):
                     # iterate through lower triangular matrix
                     if i >= j:
                         if union.has_edge(terms[i], terms[j]):
-                            union[terms[i]][terms[j]]['weight'] += (adj_matrix[i][j] * h)
+                            union[terms[i]][terms[j]]['weight'] += (adj_matrix[i][j] * h)  # += Wout
                         else:
-                            union.add_edge(terms[i], terms[j], weight=adj_matrix[i][j] * h)
+                            if adj_matrix[i][j] > 0:
+                                union.add_edge(terms[i], terms[j], weight=adj_matrix[i][j] * h)
 
         # in-wards edge weights represent Win
         w_in = {n: union.get_edge_data(n, n)['weight'] for n in union.nodes()}
