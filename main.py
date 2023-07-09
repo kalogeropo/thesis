@@ -13,14 +13,14 @@ if __name__ == '__main__':
     # rels = [[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 5]]
 
     path = 'collections/CF/docs'
-    ######### example of laod #############
+
+    ######### example of load #############
     # sb_model = SetBased(collection=None).load_model(dir='saved models')
 
     # load queries, relevant documents
     queries, rels = Collection.load_qd('collections/CF')
 
-    # create collection object
-    # most needed attrs: inverted index and size of collection
+    # create collection
     col = Collection(path).create(first=-1)
     
     """

@@ -1,0 +1,34 @@
+path: 
+  collection: 'collections/CF/docs'
+  qr_path: 'collections/CF'
+
+# variable to control how many documents to load from collection
+# when set to -1, loads all
+first_n: -1
+
+# minimum termset frequency for apriori
+min_frequency: 1
+
+# parameters for windowed version
+window:
+  size: 7
+  percentage: .1
+
+# destination to write experiment measurements
+file_path: 'exps.xlsx'
+
+
+#################### edge values ################
+wout_avg:
+  gsb: 8
+  window7: 3.5
+
+######################### experimental values for pruning #######################3
+# cluster sizes to explore
+cluster_sizes: [30, 50, 70, 90, 110, 130, 150, 170]
+
+# node similarities to explore
+similarities: [.1, .3, .5, .7]
+
+# average wout edge weight to explore
+edge_coeffs: [1.1, 1.2, 1.3, 1.4]

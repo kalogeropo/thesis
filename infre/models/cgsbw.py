@@ -10,7 +10,7 @@ class ConGSBWindow(ConGSB, GSBWindow):
 
         self.model = self._model()
         
-        self.graph, self.embeddings = prune_graph(self.graph, collection, n_clstrs=clusters, condition=cond)
+        self.graph, self.embeddings, self.prune = prune_graph(self.graph, collection, n_clstrs=clusters, condition=cond)
         
         self._cnwk()
 

@@ -4,8 +4,6 @@ from networkx.readwrite import json_graph
 from math import log2, log
 from json import dumps, load
 from pickle import load, dump
-import infre.helpers.utilities as utl
-from infre.tools import apriori
 from os.path import join, exists
 from os import makedirs, getcwd
 from bz2 import BZ2File
@@ -28,7 +26,7 @@ class GSB(BaseIRModel):
 
         # average wout edge weight
         self.avg_wout = sum(self._wout().values()) / (2 * self.graph.number_of_edges())
-        print(f"Average Wout edge weight on {self._model()} = {self.avg_wout}")
+        # print(f"Average Wout edge weight on {self._model()} = {self.avg_wout}")
 
 
     def _model(self): return __class__.__name__
@@ -103,6 +101,7 @@ class GSB(BaseIRModel):
                         if union.has_edge(terms[i], terms[j]):
                             union[terms[i]][terms[j]]['weight'] += (adj_matrix[i][j] * h)  # += Wout
                         else:
+                            # if term frequency not 0
                             if adj_matrix[i][j] > 0:
                                 union.add_edge(terms[i], terms[j], weight=adj_matrix[i][j] * h)
 

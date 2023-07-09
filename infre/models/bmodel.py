@@ -52,7 +52,7 @@ class BaseIRModel(ABC):
         pass
 
     
-    def fit(self, queries, mf=10):
+    def fit(self, queries, mf=1):
 
         # inverted index of collection documents
         inv_index = self.collection.inverted_index
@@ -91,7 +91,6 @@ class BaseIRModel(ABC):
         # for each query and (dtm, relevant) pair
         for i, (qv, dv, rel) in enumerate(zip(self._q2vec, self._docs2vec, relevant)):
             
-            # all the money function
             # document - termset matrix - model balance weight
             dtsm = self._vectorizer(dv, qv, self._m_weights[i])
             

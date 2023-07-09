@@ -107,8 +107,8 @@ def prune_graph(graph, collection, n_clstrs, condition={}):
     labels, _embeddings = sc.fit_predict(adj_matrix)
 
     ##### piece of code to check for clusters distribution
-    clusters = {label: len(labels[labels==label]) for label in np.unique(labels)}
-    print(clusters)
+    # clusters = {label: len(labels[labels==label]) for label in np.unique(labels)}
+    # print(clusters)
 
     # edges before pruning
     init_edges = graph.number_of_edges()
@@ -136,8 +136,8 @@ def prune_graph(graph, collection, n_clstrs, condition={}):
             graph.remove_edge(u, v)
             cut_edges += 1
 
-
-    print(f"{cut_edges/init_edges*100} % pruning. {cut_edges} edges were pruned out of {init_edges}.")
+    prune_percentage = cut_edges/init_edges*100
+    print(f"{prune_percentage} % pruning. {cut_edges} edges were pruned out of {init_edges}.")
 
     # assign node clusters
     for node in graph.nodes():
@@ -149,7 +149,7 @@ def prune_graph(graph, collection, n_clstrs, condition={}):
     embeddings = DataFrame(_embeddings)
     embeddings['labels'] = labels
 
-    return graph, embeddings
+    return graph, embeddings, prune_percentage
 
 
 def draw_clusters(graph):
@@ -198,3 +198,30 @@ def plot_scatter_pca(df, c_name, cmap_set="plasma"):
         ax.set_ylabel('Second Principal Component')
         ax.set_zlabel('Third Principal Component')
         ax.legend(*scatter.legend_elements(), title=c_name)
+
+
+
+def draw_graph(graph, **kwargs):
+    import matplotlib as plt
+    from networkx import circular_layout, draw, get_edge_attributes, draw_networkx_edge_labels
+    options = {
+        'node_color': 'yellow',
+        'node_size': 50,
+        'linewidths': 0,
+        'width': 0.1,
+        'font_size': 8,
+    }
+
+    filename = kwargs.get('filename', None)
+    if not filename:
+        filename = 'Union graph'
+
+    plt.figure(filename, figsize=(17, 8))
+    plt.suptitle(filename)
+
+    pos_nodes = circular_layout(graph)
+    draw(graph, pos_nodes, with_labels=True, **options)
+
+    labels = get_edge_attributes(graph, 'weight')
+    draw_networkx_edge_labels(graph, pos_nodes, edge_labels=labels)
+    plt.show()
