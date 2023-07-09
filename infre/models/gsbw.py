@@ -3,7 +3,7 @@ from infre import retrieval
 
 from infre.models import GSB
 class GSBWindow(GSB):
-    def __init__(self, collection, window=8):
+    def __init__(self, collection, window=7):
         self.window = window
         super().__init__(collection)
 

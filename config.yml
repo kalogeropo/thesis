@@ -20,9 +20,9 @@ file_path: 'exps.xlsx'
 
 #################### edge values ################
 wout_avg:
-  gsb: 8
-  window7: 3.5
-
+  comp: 8
+  cw: 2.5
+  pw:
 ######################### experimental values for pruning #######################3
 # cluster sizes to explore
 cluster_sizes: [30, 50, 70, 90, 110, 130, 150, 170]

@@ -1,4 +1,4 @@
-from infre.models import GSB, PGSB, ConGSB
+from infre.models import PGSBW, ConGSBWindow
 from numpy import mean
 from infre.preprocess import Collection
 import pandas as pd
@@ -36,18 +36,7 @@ if __name__ == '__main__':
     experiment = pd.DataFrame()
 
     avg_precs = []
-    prune_perc = [0]
-
-    ##################### GRAPHICAL SET BASED (GSB) #################### 
-    gsb_model = GSB(col).fit(queries)
-    pre, rec = gsb_model.evaluate(rels)
-    print(f'GSB: {mean(pre):.3f}, {mean(rec):.3f}')
-
-    # get average precision
-    avg_precs += [mean(pre)]
-    # concatenate new experiment
-    experiment['GSB'] = pre
-
+    prune_perc = []
 
     cluster_sizes = config["cluster_sizes"]
 
@@ -56,33 +45,33 @@ if __name__ == '__main__':
 
     for cluster_size in cluster_sizes:
 
-        ################ GRAPHICAL SET BASED WITH PRUNING (PGSB) ####################  
-        pgsb_model = PGSB(col, clusters=cluster_size).fit(queries)
+        ################ GRAPHICAL SET BASED Window (7) WITH PRUNING (PGSBW) ####################  
+        pgsb_model = PGSBW(col, window=7, clusters=cluster_size).fit(queries)
         pre, rec = pgsb_model.evaluate(rels)
-        print(f'PGSB: {mean(pre):.3f}, {mean(rec):.3f}')
+        print(f'PGSBW: {mean(pre):.3f}, {mean(rec):.3f}')
 
         # get average precision and percentage of pruning applied
         avg_precs += [mean(pre)]
         prune_perc += [pgsb_model.prune]
 
         # concatenate new experiment
-        experiment[f'PGSB-{cluster_size}'] = pre
+        experiment[f'PGSBW-{cluster_size}'] = pre
 
 
-        ############### CONCEPTUALIZED GRAPHICAL SET BASED ####################
-        con_gsb_model = ConGSB(col, clusters=cluster_size).fit(queries)
+        ############### CONCEPTUALIZED GRAPHICAL SET BASED Window ####################
+        con_gsb_model = ConGSBWindow(col, window=7, clusters=cluster_size).fit(queries)
         pre, rec = con_gsb_model.evaluate(rels)
-        print(f'CGSB: {mean(pre):.3f}, {mean(rec):.3f}')   
+        print(f'CGSBW: {mean(pre):.3f}, {mean(rec):.3f}')   
 
         # get average precision and percentage of pruning applied
         avg_precs += [mean(pre)]
         prune_perc += [con_gsb_model.prune]
 
         # concatenate new experiment
-        experiment[f'CGSB-{cluster_size}'] = pre
+        experiment[f'CGSBW-{cluster_size}'] = pre
 
     experiment['avg_pre'] = pd.Series(avg_precs)
     experiment['%prune'] = pd.Series(prune_perc)
 
     print("Storing Experiments...")
-    writer.write_to_excel(sheet_name='complete-graph-clusters', dataframe=experiment)
+    writer.write_to_excel(sheet_name='cw-graph-clusters-kmeans', dataframe=experiment)
