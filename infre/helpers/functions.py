@@ -93,19 +93,49 @@ def generate_colors(n):
 def prune_graph(graph, collection, n_clstrs, condition={}):
 
     # import needed functions
-    from networkx import to_numpy_array
+    from networkx import to_numpy_array, is_connected, connected_components
     from infre.tools import SpectralClustering
     from infre.metrics import cosine_similarity
 
-    # Cluster the nodes using spectral clustering
-    sc = SpectralClustering(n_clusters=n_clstrs, affinity='precomputed', assign_labels='kmeans')
-    
+
     # convert graph to adjacency matrix
     adj_matrix = to_numpy_array(graph)
-    
+
+    # Check if the graph is connected
+    if not is_connected(graph):
+        print("Graph is not connected")
+
+        from  random import choice
+        # Get the connected components (subgraphs)
+        components = list(connected_components(graph))
+
+        # Connect the subgraphs
+        num_subgraphs = len(components)
+        if num_subgraphs > 1:
+            for i in range(num_subgraphs - 1):
+                subgraph1 = components[i]
+                subgraph2 = components[i + 1]
+                
+                # Randomly select a node from each subgraph
+                node1 = choice(list(subgraph1))
+                node2 = choice(list(subgraph2))
+                
+                # Add an edge between the selected nodes
+                graph.add_edge(node1, node2)
+
+                # Update the corresponding entries in the adjacency matrix
+                index1 = collection.inverted_index[node1]['id']
+                index2 = collection.inverted_index[node2]['id']
+                adj_matrix[index1, index2] = .2
+                adj_matrix[index2, index1] = .2
+
+
+    # Cluster the nodes using spectral clustering
+    sc = SpectralClustering(n_clusters=n_clstrs, affinity='precomputed', assign_labels='kmeans')
+
     # apply sc
     labels, _embeddings = sc.fit_predict(adj_matrix)
-
+    
     ##### piece of code to check for clusters distribution
     # clusters = {label: len(labels[labels==label]) for label in np.unique(labels)}
     # print(clusters)
@@ -135,6 +165,7 @@ def prune_graph(graph, collection, n_clstrs, condition={}):
         if labels[c] != labels[w] or flag:
             graph.remove_edge(u, v)
             cut_edges += 1
+
 
     prune_percentage = cut_edges/init_edges*100
     print(f"{prune_percentage} % pruning. {cut_edges} edges were pruned out of {init_edges}.")

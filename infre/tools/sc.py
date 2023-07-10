@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.manifold import SpectralEmbedding
 
 class SpectralClustering:
-    def __init__(self, n_clusters=10, affinity='nearest_neighbors', n_neighbors=3, assign_labels='kmeans', n_init=5):
+    def __init__(self, n_clusters=10, affinity='nearest_neighbors', n_neighbors=3, assign_labels='kmeans', n_init=10):
         self.n_clusters = n_clusters
         self.affinity = affinity
         self.n_neighbors = n_neighbors
@@ -27,7 +27,8 @@ class SpectralClustering:
 
         else:
             raise ValueError("Invalid affinity parameter")
-        
+
+
         emb_model = SpectralEmbedding(n_components=self.n_clusters, affinity=self.affinity, n_jobs=-1)
         embedding = emb_model.fit_transform(A)
 

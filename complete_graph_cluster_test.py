@@ -1,4 +1,4 @@
-from infre.models import GSB, PGSB, ConGSB
+from infre.models import PGSB, ConGSB
 from numpy import mean
 from infre.preprocess import Collection
 import pandas as pd

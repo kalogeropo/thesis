@@ -15,9 +15,8 @@ class ConGSB(GSB):
         self.model = self._model()
 
         self.graph, self.embeddings, self.prune = prune_graph(self.graph, collection, n_clstrs=clusters, condition=cond)
-
+        
         self._cnwk()
-
 
     def _model(self): return __class__.__name__
     

@@ -10,7 +10,7 @@ class PGSB(GSB, BaseIRModel):
         self.model = self._model()
 
         self.graph, _, self.prune = prune_graph(self.union_graph(), collection, clusters, condition=condition)
-
+        
         # NW Weight of GSBs
         self._nwk()
 
