@@ -6,12 +6,12 @@ import seaborn as sns
 def plot_experiment(df, avgs, prune_pers, current_best, title=''):
     
     # get rid of similarity label 
-    df.columns = df.columns.str.replace(r'-\d\.\d+', '', regex=True)
+    temp_columns = df.columns.str.replace(r'-\d\.\d+', '', regex=True)
     
-    df = pd.DataFrame({"model": df.columns, "avg_pre": avgs, "%prune": prune_pers})
+    df = pd.DataFrame({"model": temp_columns, "avg_pre": avgs, "%prune": prune_pers})
     df = df.sort_values(by="avg_pre", ascending=False)
     
-    ax = df.plot.bar(x="model", y="avg_pre", rot=60, figsize=(8, 6), title=title)
+    ax = df.plot.bar(x="model", y="avg_pre", rot=60, figsize=(8, 5), title=title)
     ax.set_ylabel('precision')
 
     ax.plot([current_best for _ in range(df.shape[0])], color='red', linestyle='-', label="Old Best Model")
@@ -29,7 +29,10 @@ def plot_experiment(df, avgs, prune_pers, current_best, title=''):
 
 
 def compare_models(df):
-    
+    """
+        Compare the performance of each query between each pair of models
+        in order to find the model that has the biggest diff between all others
+    """
     models = df.columns
 
     # Create a new DataFrame to store the positive counts
@@ -41,10 +44,14 @@ def compare_models(df):
                 pairwise_diff = df[models[i]] - df[models[j]]  # Subtract pairwise columns
                 positive_count = (pairwise_diff > 0).sum()  # Count positive differences
                 positives.loc[models[i], models[j]] = positive_count
-    
+
+    return positives
+
+
+def plot_heatmap(cm):
     # Create a heatmap plot
     plt.figure(figsize=(8, 6))
-    sns.heatmap(positives, annot=True, cmap='Blues')
+    sns.heatmap(cm, annot=True, cmap='Blues')
 
     # Set plot title and labels
     plt.title('Number of Queries Where One Model Performs Better')
@@ -52,7 +59,17 @@ def compare_models(df):
     # Display the plot
     plt.show()
 
+
+
+def evaluate_models(positives, avgs, prunes, *coeffs):
+    
+    # unpack percentages for the linear combination
+    a, b, c, = coeffs
+
     # When we sum the values by rows, we are essentially aggregating the number of positive differences for each model.
     # The row sum represents the total count of queries where a given model outperforms the other models. 
-    best_model = positives.sum(axis=1).idxmax()
-    print("Best Model:", best_model)
+    mpd = positives.sum(axis=1) / ((positives.shape[1]-1) * 100)
+    
+    model_values = (a * mpd + b * avgs + c * prunes/100).round(4)
+    
+    return model_values.to_dict()

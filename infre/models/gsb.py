@@ -20,10 +20,10 @@ class GSB(BaseIRModel):
 
         # empty graph to be filled by union
         self.graph = self.union_graph()
-
+        
         # NW Weight of GSB
         self._nwk()
-
+        
         # average wout edge weight
         self.avg_wout = sum(self._wout().values()) / (2 * self.graph.number_of_edges())
         print(f"Average Wout edge weight on {self._model()} = {self.avg_wout}")
@@ -132,9 +132,7 @@ class GSB(BaseIRModel):
     def _nwk(self, a=1, b=10):
 
         if is_empty(self.graph): 
-            self.graph = self.union_graph()
-  
-        # nwk = {}
+            raise("Union Graph must be constructed first.")
         
         Win = self._win()
         Wout = self._wout()
@@ -200,7 +198,7 @@ class GSB(BaseIRModel):
         try:
             # store via the help of json dump
             with open(path, "w") as gf:
-                gf.write(dumps(graph_index, cls=utl.NpEncoder))
+                gf.write(dumps(graph_index))
         
         # if directory does not exist
         except FileNotFoundError:

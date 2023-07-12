@@ -121,7 +121,7 @@ def prune_graph(graph, collection, n_clstrs, condition={}):
                 node2 = choice(list(subgraph2))
                 
                 # Add an edge between the selected nodes
-                graph.add_edge(node1, node2)
+                graph.add_edge(node1, node2, weight=.2)
 
                 # Update the corresponding entries in the adjacency matrix
                 index1 = collection.inverted_index[node1]['id']
@@ -155,6 +155,7 @@ def prune_graph(graph, collection, n_clstrs, condition={}):
             
             if cond == 'edge':
                 edge_weight = graph.get_edge_data(u, v)['weight']
+    
                 flag = edge_weight <= theshold
             elif cond == 'sim':
                 flag = cosine_similarity(_embeddings[c, :],  _embeddings[w, :]) <= theshold

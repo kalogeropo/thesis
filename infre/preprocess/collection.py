@@ -201,10 +201,13 @@ class Collection():
 
 
     @staticmethod
-    def load_qd(path):
+    def load_qd(path, prep=True):
 
         with open(join(path, 'Queries.txt'), 'r') as fd:
-            queries = [Collection.preprocess(q.split()) for q in fd.readlines()]
+            if prep:
+                queries = [Collection.preprocess(q.split()) for q in fd.readlines()]
+            else:
+                queries = [q.split() for q in fd.readlines()]
 
         with open(join(path, 'Relevant.txt'), 'r') as fd:
             relevant = [[int(id) for id in d.split()] for d in fd.readlines()]

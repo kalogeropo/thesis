@@ -32,3 +32,7 @@ similarities: [.1, .3, .5, .7]
 
 # average wout edge weight to explore
 edge_coeffs: [1.1, 1.2, 1.3, 1.4]
+
+# Window Percentages to explore
+percentages: [.1, .3, .5, .7]
+# wout_avg per perc: [3.12, 4.57, 5.79, 6.34]

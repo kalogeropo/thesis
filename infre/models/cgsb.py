@@ -16,6 +16,8 @@ class ConGSB(GSB):
 
         self.graph, self.embeddings, self.prune = prune_graph(self.graph, collection, n_clstrs=clusters, condition=cond)
         
+        # self._nwk() # ??? that was not here andd _cnwk was calculated based on the gsb nwk!! (with no prune)
+
         self._cnwk()
 
     def _model(self): return __class__.__name__
@@ -58,7 +60,7 @@ class ConGSB(GSB):
             tw = 1
             for term in termset:
                 if term in inv_index:
-                    # get the nw weight of term k and mulitply it to total
+                    # get the cnw of term k and mulitply it to total
                     tw *= inv_index[term]['cnwk']
             tns[i] = tw
 
