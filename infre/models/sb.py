@@ -12,7 +12,7 @@ class SetBased(BaseIRModel):
 
     def _model(self): return __class__.__name__
 
-
+    ##### multiply all by 1 essentially #########3
     def _model_func(self, termsets): return 
     
     

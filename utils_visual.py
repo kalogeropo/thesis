@@ -69,7 +69,7 @@ def evaluate_models(positives, avgs, prunes, *coeffs):
     # When we sum the values by rows, we are essentially aggregating the number of positive differences for each model.
     # The row sum represents the total count of queries where a given model outperforms the other models. 
     mpd = positives.sum(axis=1) / ((positives.shape[1]-1) * 100)
-    
+
     model_values = (a * mpd + b * avgs + c * prunes/100).round(4)
     
     return model_values.to_dict()

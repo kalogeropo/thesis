@@ -6,7 +6,6 @@ from infre.helpers.functions import prune_graph
 class ConGSBWindow(ConGSB, GSBWindow):
     def __init__(self, collection, window, clusters, cond={}):
         GSBWindow.__init__(self, collection, window)
-        # ConGSB.__init__(self, collection, cond)
 
         self.model = self._model()
         
@@ -15,5 +14,6 @@ class ConGSBWindow(ConGSB, GSBWindow):
         self._nwk()
         
         self._cnwk()
+
 
     def _model(self): return __class__.__name__

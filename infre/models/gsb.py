@@ -9,7 +9,7 @@ from os import makedirs, getcwd
 from bz2 import BZ2File
 
 from infre.models import BaseIRModel
-
+from time import time
 
 class GSB(BaseIRModel):
     def __init__(self, collection):
@@ -26,7 +26,7 @@ class GSB(BaseIRModel):
         
         # average wout edge weight
         self.avg_wout = sum(self._wout().values()) / (2 * self.graph.number_of_edges())
-        print(f"Average Wout edge weight on {self._model()} = {self.avg_wout}")
+        # print(f"Average Wout edge weight on {self._model()} = {self.avg_wout}")
 
 
     def _model(self): return __class__.__name__

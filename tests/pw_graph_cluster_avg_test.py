@@ -40,20 +40,21 @@ if __name__ == '__main__':
 
     cluster_sizes = config["cluster_sizes"][-4:]
     percentages = config["percentages"]
-    similarities = config["similarities"][-2:]
-    print(similarities)
-    total_exps = len(cluster_sizes) * len(percentages) * len(similarities) * 2 # (2 is the number of models)
+    coeffs = config["edge_coeffs"][-2:]
+    avg_wouts = config["wout_avg"]["pw"]
+
+    total_exps = len(cluster_sizes) * len(percentages) * len(coeffs) * 2 # (2 is the number of models)
     current_exp = 0
-    for perc in percentages:
+    for perc, avg_wout in zip(percentages, avg_wouts):
         for cluster_size in cluster_sizes:
-            for similarity in similarities:
+            for coeff in coeffs:
 
                 current_exp += 2
                 print(f"Calculating {current_exp} / {total_exps}...")
-                print(f'Experiment: (Window-{perc} - {cluster_size} - {similarity})')
+                print(f'Experiment: (Window-{perc} - {cluster_size} - {coeff})')
             
-                ################ GRAPHICAL SET BASED Window Per WITH PRUNING (PGSBW) ####################  
-                pgsbw_model = PGSBW(col, window=perc, clusters=cluster_size, condition={"sim":similarity}).fit(queries)
+                ################ GRAPHICAL SET BASED Window Perc WITH PRUNING (PGSBW) ####################  
+                pgsbw_model = PGSBW(col, window=perc, clusters=cluster_size, condition={"edge":avg_wout*coeff}).fit(queries)
                 pre, rec = pgsbw_model.evaluate(rels)
                 print(f'PGSBW: {mean(pre):.3f}, {mean(rec):.3f}')
 
@@ -62,11 +63,11 @@ if __name__ == '__main__':
                 prune_perc += [pgsbw_model.prune]
 
                 # concatenate new experiment
-                experiment[f'PGSBW-{perc}-{cluster_size}-{similarity}'] = pre
+                experiment[f'PGSBW-{perc}-{cluster_size}-{coeff}'] = pre
 
 
-                ############### CONCEPTUALIZED GRAPHICAL SET BASED Window ####################
-                con_gsbw_model = ConGSBWindow(col, window=perc, clusters=cluster_size, cond={"sim":similarity}).fit(queries)
+                ############### CONCEPTUALIZED GRAPHICAL SET BASED Perc Window ####################
+                con_gsbw_model = ConGSBWindow(col, window=perc, clusters=cluster_size, cond={"edge":avg_wout*coeff}).fit(queries)
                 pre, rec = con_gsbw_model.evaluate(rels)
                 print(f'CGSBW: {mean(pre):.3f}, {mean(rec):.3f}')   
 
@@ -75,11 +76,11 @@ if __name__ == '__main__':
                 prune_perc += [con_gsbw_model.prune]
 
                 # concatenate new experiment
-                experiment[f'CGSBW-{perc}-{cluster_size}-{similarity}'] = pre
+                experiment[f'CGSBW-{perc}-{cluster_size}-{coeff}'] = pre
 
 
     experiment['avg_pre'] = pd.Series(avg_precs)
     experiment['%prune'] = pd.Series(prune_perc)
 
     print("Storing Experiments...")
-    writer.write_to_excel(sheet_name='pw-graph-clusters-sim', dataframe=experiment)
+    writer.write_to_excel(sheet_name='pw-graph-clusters-avg', dataframe=experiment)

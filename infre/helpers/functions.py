@@ -1,4 +1,7 @@
 import numpy as np
+from pandas import DataFrame
+from time import time
+
 
 # Define a function to generate a single random walk
 def generate_random_walk(graph, start_node, walk_length, transition_probs):
@@ -129,7 +132,7 @@ def prune_graph(graph, collection, n_clstrs, condition={}):
                 adj_matrix[index1, index2] = .2
                 adj_matrix[index2, index1] = .2
 
-
+    
     # Cluster the nodes using spectral clustering
     sc = SpectralClustering(n_clusters=n_clstrs, affinity='precomputed', assign_labels='kmeans')
 
@@ -168,16 +171,19 @@ def prune_graph(graph, collection, n_clstrs, condition={}):
             cut_edges += 1
 
 
+        # Assign node clusters during the iteration
+        graph.add_node(u, cluster=labels[c])
+        graph.add_node(v, cluster=labels[w])
+
     prune_percentage = cut_edges/init_edges*100
     print(f"{prune_percentage} % pruning. {cut_edges} edges were pruned out of {init_edges}.")
 
     # assign node clusters
-    for node in graph.nodes():
-        idx = collection.inverted_index[node]['id']
-        graph.add_node(node, cluster=labels[idx])
+    # for node in graph.nodes():
+    #     idx = collection.inverted_index[node]['id']
+    #     graph.add_node(node, cluster=labels[idx])
 
     # convert emebeddings 2D array to a labeled df for future visual exploitation
-    from pandas import DataFrame
     embeddings = DataFrame(_embeddings)
     embeddings['labels'] = labels
 

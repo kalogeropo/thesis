@@ -32,25 +32,24 @@ if __name__ == '__main__':
     writer = ExcelWriter(file_path)
 
 
-
     # dataframe to store each experiment (precision of the model) as a nenw column
-    # experiment = pd.DataFrame()
+    experiment = pd.DataFrame()
 
-    # ############ SET BASED ####################
-    # sb_model = SetBased(col).fit(queries)
-    # pre, rec = sb_model.evaluate(rels)
-    # print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}')
+    ############ SET BASED ####################
+    sb_model = SetBased(col).fit(queries)
+    pre, rec = sb_model.evaluate(rels)
+    print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}')
     
-    # # store experiment
-    # experiment['SB'] = pre
+    # store experiment
+    experiment['SB'] = pre
     
-    # ############ GRAPHICAL SET BASED #################### 
-    # gsb_model = GSB(col).fit(queries)
-    # pre, rec = gsb_model.evaluate(rels)
-    # print(f'GSB: {mean(pre):.3f}, {mean(rec):.3f}')
+    ############ GRAPHICAL SET BASED #################### 
+    gsb_model = GSB(col).fit(queries)
+    pre, rec = gsb_model.evaluate(rels)
+    print(f'GSB: {mean(pre):.3f}, {mean(rec):.3f}')
     
-    # # store experiment
-    # experiment['GSB'] = pre
+    # store experiment
+    experiment['GSB'] = pre
 
     ########## GRAPHICAL SET BASED Constant WIWNDOW ####################
     w = config["window"]["size"]
@@ -60,8 +59,8 @@ if __name__ == '__main__':
     print(f'GSBW: {mean(pre):.3f}, {mean(rec):.3f}')
 
     # store experiment
-    # experiment[f'GSBW-{w}'] = pre
+    experiment[f'GSBW-{w}'] = pre
 
-    # print("Storing Experiments...")
-    # writer.write_to_excel(sheet_name='old-models', dataframe=experiment)
-    # print(experiment)
+    print("Storing Experiments...")
+    writer.write_to_excel(sheet_name='old-models', dataframe=experiment)
+    print(experiment)

@@ -30,25 +30,25 @@ class SpectralClustering:
 
 
         emb_model = SpectralEmbedding(n_components=self.n_clusters, affinity=self.affinity, n_jobs=-1)
-        embedding = emb_model.fit_transform(A)
+        embeddings = emb_model.fit_transform(A)
 
         # Cluster using k-means or discretize
         if self.assign_labels == 'kmeans':
             from sklearn.cluster import KMeans
 
             kmeans = KMeans(n_clusters=self.n_clusters, n_init=self.n_init)
-            labels = kmeans.fit_predict(embedding)
+            labels = kmeans.fit_predict(embeddings)
 
         elif self.assign_labels == 'discretize':
             from sklearn.cluster._spectral import discretize
-            labels = discretize(embedding)
+            labels = discretize(embeddings)
 
 
         elif self.assign_labels == 'cluster_qr':
             from sklearn.cluster._spectral import cluster_qr
-            labels = cluster_qr(embedding)
+            labels = cluster_qr(embeddings)
             
         else:
             raise ValueError("Invalid assign_labels parameter")
         
-        return labels, embedding
+        return labels, embeddings
