@@ -1,7 +1,6 @@
 from re import findall
-from os import getcwd
 from os.path import exists
-from infre import retrieval
+from infre import metrics
 
 
 class Document():
@@ -22,7 +21,7 @@ class Document():
         self.terms = self.read_document()
 
         # calcualte word term frequenciess
-        self.tf = retrieval.tf(self.terms)
+        self.tf = metrics.tf(self.terms)
 
 
     def read_document(self):

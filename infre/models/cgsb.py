@@ -1,25 +1,79 @@
 from infre.tools import apriori
-
-# TODO: sentiment analysis - by product
-
 from infre.models import GSB
 import numpy as np
 from numpy import zeros
-from infre.helpers.functions import prune_graph
+from infre.helpers.functions import cluster_graph, prune_graph
 from sklearn.metrics.pairwise import cosine_similarity
 from infre.metrics import precision_recall
-from time import time
+from sklearn.neighbors import NearestNeighbors
+
 
 class ConGSB(GSB):
+    """
+    Contextual Graphical Set-Based (ConGSB) Information Retrieval Model.
+    Extends the GSB model by introducing a contextual approach, performing clustering, and pruning.
+    Also, incorporates query expansion and employs term-set based similarity calculations.
+
+    Parameters:
+    -----------
+    collection : object
+        The collection over which IR tasks will be performed.
+        
+    clusters : int
+        Number of clusters to be used for the union graph.
+
+    cond : dict, optional (default={})
+        Pruning conditions for the graph. Can specify conditions in the form {'edge': value} or {'sim': value}.
+
+    Attributes:
+    -----------
+    model : str
+        Name of the model.
+    
+    labels : ndarray
+        Cluster labels for the nodes of the graph.
+        
+    embeddings : ndarray
+        Embeddings corresponding to the nodes of the graph.
+    
+    graph : object
+        The pruned union graph.
+    
+    prune_percentage : float
+        Percentage of the graph that has been pruned.
+
+    Methods:
+    --------
+    _model() -> str :
+        Returns the class name.
+    
+    expand_q(query: list, k: int) -> list :
+        Expand the given query using nearest neighbor approach in the embeddings space.
+        
+    fit_evaluate(queries: list, relevants: list) -> tuple :
+        Perform IR tasks on given queries and evaluate using the precision-recall metric.
+        
+    _cnwk() -> None :
+        Calculate the new scalar centroids of NWk for each term in the collection's inverted index.
+        
+    _model_func(termsets: list) -> np.ndarray :
+        Compute the model adjusting weight based on the contextual NWk values for each termset.
+    """
+        
     def __init__(self, collection, clusters, cond={}):
         
         super().__init__(collection)
 
+        # model name
         self.model = self._model()
+
+        # Cluster the graph and get labels and embeddings
+        self.labels, self.embeddings = cluster_graph(self.graph, collection, clusters)
+
+        # Prune the graph
+        self.graph, self.prune_percentage = prune_graph(self.graph, collection, self.labels, self.embeddings, cond)
         
-        self.graph, self.embeddings, self.prune = prune_graph(self.graph, collection, n_clstrs=clusters, condition=cond)
-        
-        # self._nwk() # ??? that was not here andd _cnwk was calculated based on the gsb nwk!! (with no prune)
+        # calculate the new scalar centroids of NWk
         self._cnwk()
 
 
@@ -43,12 +97,15 @@ class ConGSB(GSB):
         # Calculate query point in embedding space by taking the mean
         qv = np.mean(query_embeddings , axis=0)
 
-        # Compute similarity between query and the collection terms in that space
-        similarities = cosine_similarity([qv], self.embeddings.iloc[:, :-1].values)[0]
-        
-        # Get the indices of the top k similarities in descending order
-        # In our case, double the query
-        top_k_indices = np.argsort(-similarities)[:k]
+        # Fit a k-nearest neighbors model on the collection embeddings
+        knn_model = NearestNeighbors(n_neighbors=k, metric='cosine')
+        knn_model.fit(self.embeddings.iloc[:, :-1].values)
+
+        # Find the k-nearest neighbors to the query centroid
+        _, top_k_indices = knn_model.kneighbors([qv])
+
+        # Convert the top_k_indices array to a 1D array
+        top_k_indices = top_k_indices[0]
 
         col_terms = list(inv_index.keys())
         # Add the expansion terms to the list preventing duplicates
@@ -56,6 +113,56 @@ class ConGSB(GSB):
                                                     if col_terms[k_ind] not in query])
         
         return expansion_terms
+    
+
+    def expand_q_centroids(self, query, k):
+
+        inv_index = self.collection.inverted_index
+
+        # Get collection indices for each term in query
+        indices = [inv_index[term]['id'] for term in query if term in inv_index]
+
+        # if query term not in collection, instantly append in expansion terms
+        # Since there is no embedding calcualte for it
+        expansion_terms = [term for term in query if term not in inv_index]
+
+        # Get query embeddings and drop label (cluster id)
+        query_embeddings = self.embeddings.iloc[indices, :-1].values
+        
+        if len(indices) > 0:
+
+            # Calculate query point in embedding space by taking the mean
+            qv = np.mean(query_embeddings , axis=0)
+            
+            # centroids of each cluster
+            centroids = self.embeddings.groupby('labels').mean().reset_index().drop(columns=['labels']).values
+
+            # Compute similarity between query and the collection terms in that space
+            similarities = cosine_similarity([qv], centroids)[0]
+
+            # Get the cluster assignment for the query
+            query_cluster = self.embeddings.iloc[np.argmax(similarities)]['labels']
+
+            # Find terms from the collection that belong to the same cluster as the query terms
+            collection_terms_in_nearest_cluster = [
+                inv_index[term]['id'] for term, cluster in zip(inv_index.keys(), self.embeddings['labels'].values)
+                if cluster == query_cluster and term not in query
+            ]
+
+            # Calculate the cosine similarity between the query centroid and same cluster terms in the cluster
+            query_centroid_similarity = cosine_similarity([qv], self.embeddings.iloc[collection_terms_in_nearest_cluster, :-1].values)
+
+            # Sort the terms based on their similarity to the query centroid
+            sorted_indices = np.argsort(-query_centroid_similarity[0])
+
+            # Add the expansion terms from the nearest cluster(s) to the list, selecting the top 'k' terms
+            col_terms = list(inv_index.keys())
+            for i in sorted_indices[:k]:
+                term = col_terms[collection_terms_in_nearest_cluster[i]]
+                expansion_terms.append(term)
+
+            # Pick 'k' terms from the expansion terms (if 'k' is greater than the number of expansion terms, take all)
+            return expansion_terms[:k]
 
     
     def fit_evaluate(self, queries, relevants):
@@ -68,9 +175,11 @@ class ConGSB(GSB):
 
             ################# QUERY EXPANSION ###################
             # k = int(len(query)/2)+1 if len(query) > 12 else len(query)
-            k = len(query)
+            k = len(query)# //2 + 1 
+            
             query += self.expand_q(query, k)
-
+            # query += self.expand_q_centroids(query, k)
+            
             # apply apriori to find frequent termsets
             freq_termsets = apriori(query, inv_index, min_freq=1)
             
@@ -104,7 +213,7 @@ class ConGSB(GSB):
 
         return np.array(self.precision), np.array(self.recall)
 
-    # .272
+
     def _cnwk(self):
         # Dictionary to store computed _cnwk values for each cluster
         cluster_cnwk = {}

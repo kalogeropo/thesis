@@ -1,4 +1,4 @@
-from networkx import Graph, set_node_attributes, get_node_attributes, to_numpy_array, is_empty
+from networkx import Graph, set_node_attributes, get_node_attributes, is_empty
 from numpy import array, dot, fill_diagonal, zeros
 from networkx.readwrite import json_graph
 from math import log2, log
@@ -7,18 +7,25 @@ from pickle import load, dump
 from os.path import join, exists
 from os import makedirs, getcwd
 from bz2 import BZ2File
-
 from infre.models import BaseIRModel
-from time import time
 
 class GSB(BaseIRModel):
+    """
+    Graphicl Set-Based (GSB) Information Retrieval Model based on kalogeropoulos et. al.
+    """
     def __init__(self, collection):
+        """
+        Initializes the GSB model with a given collection.
+
+        Parameters:
+            collection (object): The collection of documents to be processed.
+        """
         super().__init__(collection)
         
         # model name
         self.model = self._model()
 
-        # empty graph to be filled by union
+        # Create Union Graph
         self.graph = self.union_graph()
         
         # NW Weight of GSB
@@ -33,7 +40,15 @@ class GSB(BaseIRModel):
 
     
     def _model_func(self, termsets): 
-        
+        """
+        Calculates the weight for each termset based on the product of the NW weights of its terms (kalogeropoulos et. al).
+
+        Parameters:
+            termsets (list): List of termsets.
+
+        Returns:
+            numpy.array: Array of weights for each termset.
+        """
         tns = zeros(len(termsets), dtype=float)
         inv_index = self.collection.inverted_index
 
@@ -48,18 +63,37 @@ class GSB(BaseIRModel):
         return tns 
     
     
-    # tsf * idf for set based
     def _vectorizer(self, tsf_ij, idf, *args):
+        """
+        Computes the vector representation of terms based on termset frequency (TSF) 
+        and inverse document frequency (IDF).
+
+        Parameters:
+            tsf_ij (numpy.array): Term set frequencies.
+            idf (numpy.array): Inverse document frequencies.
+            *args: Variable length argument list. In this model, argument is the 
+                    array of weights for each termset returned from _model_func.
+
+        Returns:
+            numpy.array: Vectorized representation.
+        """
 
         tns, *_ = args
         ########## each column corresponds to a document #########
         return tsf_ij * (idf * tns).reshape(-1, 1)
 
 
-    ##############################################
-    ## Creating a complete graph TFi*TFj = Wout ##
-    ##############################################
     def doc2adj(self, document):
+        """
+        Computes the adjacency matrix for the terms in a document based on their 
+        term frequencies using Makris algorithm.
+
+        Parameters:
+            document (object): Document with term frequencies.
+
+        Returns:
+            numpy.array: Adjacency matrix.
+        """
 
         # get list of term frequencies
         rows = array(list(document.tf.values())).reshape((-1, 1))
@@ -79,7 +113,18 @@ class GSB(BaseIRModel):
 
 
     def union_graph(self, kcore=[], kcore_bool=False):
+        """
+        Constructs the union graph of the collection using adjacency matrices 
+        of individual documents.
 
+        Parameters:
+            kcore (list, optional): List of core terms for importance weighting.
+            kcore_bool (bool, optional): Whether to use importance weighting.
+
+        Returns:
+            NetworkX Graph: Union graph of the collection.
+        """
+        
         union = Graph() # empty graph 
 
         # for every graph document object
@@ -118,18 +163,48 @@ class GSB(BaseIRModel):
         
     
     def _win(self):
+        """
+        Retrieves the inward edge weights (Win) for each node in the graph.
+
+        Returns:
+            dict: Dictionary of inward edge weights indexed by node.
+        """
         return get_node_attributes(self.graph, 'weight')
 
 
     def _wout(self):
+        """
+        Computes the outward edge weights (Wout) for each node in the graph.
+
+        Returns:
+            dict: Dictionary of outward edge weights indexed by node.
+        """
         return {node: val for (node, val) in self.graph.degree(weight='weight')}
 
 
     def _number_of_nbrs(self):
+        """
+        Computes the number of neighbors for each node in the graph.
+
+        Returns:
+            dict: Dictionary of number of neighbors indexed by node.
+        """
         return {node: val for (node, val) in self.graph.degree()}
 
 
     def _nwk(self, a=1, b=10):
+        """
+        Computes the node weights (NWk) for each term in the collection using 
+        inward and outward edge weights and updates the inverted index of the 
+        collection with these weights, based on kalogeropulos et. al equation.
+
+        Parameters:
+            a (float, optional): Weighting parameter. Default is 1.
+            b (float, optional): Weighting parameter. Default is 10.
+
+        Returns:
+            None
+        """
 
         if is_empty(self.graph): 
             raise("Union Graph must be constructed first.")
@@ -148,7 +223,7 @@ class GSB(BaseIRModel):
         return
     
 
-        # picke model
+    # picke model
     def save_model(self, path, name='config.model'):
         
         # define indexes path

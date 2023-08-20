@@ -84,32 +84,40 @@ def generate_random_walks(graph, walk_length, num_walks, p, q):
     return walks
 
 
-import random
+from random import choice, randint
 def generate_colors(n):
     colors = []
     for _ in range(n):
-        color_code = "#{:02x}{:02x}{:02x}".format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        color_code = "#{:02x}{:02x}{:02x}".format(randint(0, 255), randint(0, 255), randint(0, 255))
         colors.append(color_code)
     return colors
 
 
-def prune_graph(graph, collection, n_clstrs, condition={}):
+from networkx import to_numpy_array, is_connected, connected_components
+from infre.metrics import cosine_similarity
+from pandas import DataFrame
+from infre.tools import SpectralClustering
 
-    # import needed functions
-    from networkx import to_numpy_array, is_connected, connected_components
-    from infre.tools import SpectralClustering
-    from infre.metrics import cosine_similarity
-
-
-    # convert graph to adjacency matrix
+def cluster_graph(graph, collection, n_clstrs):
+    """
+    Cluster the nodes of a given graph using spectral clustering.
+    
+    Parameters:
+    - graph (networkx.Graph): The input graph.
+    - collection: A collection object from infre.preprocess with inverted index information.
+    - n_clstrs (int): Number of clusters for the spectral clustering.
+    
+    Returns:
+    - DataFrame: Embeddings of nodes after clustering.
+    - numpy.array: Labels indicating the cluster of each node.
+    """
+        
+    # Convert graph to adjacency matrix
     adj_matrix = to_numpy_array(graph)
 
     # Check if the graph is connected
     if not is_connected(graph):
         print("Graph is not connected")
-
-        from  random import choice
-        # Get the connected components (subgraphs)
         components = list(connected_components(graph))
 
         # Connect the subgraphs
@@ -119,75 +127,85 @@ def prune_graph(graph, collection, n_clstrs, condition={}):
                 subgraph1 = components[i]
                 subgraph2 = components[i + 1]
                 
-                # Randomly select a node from each subgraph
                 node1 = choice(list(subgraph1))
                 node2 = choice(list(subgraph2))
                 
-                # Add an edge between the selected nodes
                 graph.add_edge(node1, node2, weight=.2)
 
-                # Update the corresponding entries in the adjacency matrix
                 index1 = collection.inverted_index[node1]['id']
                 index2 = collection.inverted_index[node2]['id']
                 adj_matrix[index1, index2] = .2
                 adj_matrix[index2, index1] = .2
-
     
-    # Cluster the nodes using spectral clustering
+    # Perform spectral clustering
     sc = SpectralClustering(n_clusters=n_clstrs, affinity='precomputed', assign_labels='kmeans')
-
-    # apply sc
     labels, _embeddings = sc.fit_predict(adj_matrix)
-    
-    ##### piece of code to check for clusters distribution
-    # clusters = {label: len(labels[labels==label]) for label in np.unique(labels)}
-    # print(clusters)
 
-    # edges before pruning
+    # Convert embeddings 2D array to a labeled df for future visual exploitation
+    embeddings = DataFrame(_embeddings)
+    embeddings['labels'] = labels
+
+    return labels, embeddings
+
+
+def prune_graph(graph, collection, labels, embeddings, condition):
+    """
+    Prune (or remove) edges from the graph based on certain conditions.
+    
+    Parameters:
+    - graph (networkx.Graph): The input graph.
+    - collection: A collection object from infre.preprocess with inverted index information.
+    - labels (numpy.array): Labels indicating the cluster of each node.
+    - embeddings (DataFrame): Embeddings of nodes.
+    - condition (dict): Condition to decide which edges to prune. 
+                        It could be based on edge weight or similarity.
+                        
+    Returns:
+    - networkx.Graph: The pruned graph.
+    - float: Percentage of pruned edges.
+    """
+     
+    # Edges before pruning
     init_edges = graph.number_of_edges()
-    # keep trach of deleted edges
+    # Track of deleted edges
     cut_edges = 0
 
-    # Remove edges between nodes in different clusters
     for u, v in graph.edges():
         c, w = collection.inverted_index[u]['id'], collection.inverted_index[v]['id']
 
         try:
-            cond = list(condition.keys())[0]
-            theshold = list(condition.values())[0]
+            cond, threshold = list(condition.items())[0]
             
             if cond == 'edge':
                 edge_weight = graph.get_edge_data(u, v)['weight']
-    
-                flag = edge_weight <= theshold
+                flag = edge_weight <= threshold
             elif cond == 'sim':
-                flag = cosine_similarity(_embeddings[c, :],  _embeddings[w, :]) <= theshold
+                flag = cosine_similarity(embeddings.iloc[c, :].values, embeddings.iloc[w, :].values) <= threshold
 
         except IndexError:
             flag = 0
 
-        if labels[c] != labels[w] or flag:
-            graph.remove_edge(u, v)
-            cut_edges += 1
+        if labels[c] != labels[w]:
+            if flag or not condition:
+                graph.remove_edge(u, v)
+                cut_edges += 1
+        else:
+            if cond == 'sim':
+                if cosine_similarity(embeddings.iloc[c, :].values, embeddings.iloc[w, :].values) <= 2 * np.abs(threshold):
+                    graph.remove_edge(u, v)
+                    cut_edges += 1
+            elif cond == 'edge':
+                if edge_weight <= 2 * threshold:
+                    graph.remove_edge(u, v)
+                    cut_edges += 1
 
-
-        # Assign node clusters during the iteration
         graph.add_node(u, cluster=labels[c])
         graph.add_node(v, cluster=labels[w])
 
     prune_percentage = cut_edges/init_edges*100
     print(f"{prune_percentage} % pruning. {cut_edges} edges were pruned out of {init_edges}.")
 
-    # assign node clusters
-    # for node in graph.nodes():
-    #     idx = collection.inverted_index[node]['id']
-    #     graph.add_node(node, cluster=labels[idx])
-
-    # convert emebeddings 2D array to a labeled df for future visual exploitation
-    embeddings = DataFrame(_embeddings)
-    embeddings['labels'] = labels
-
-    return graph, embeddings, prune_percentage
+    return graph, prune_percentage
 
 
 def draw_clusters(graph):
@@ -197,7 +215,7 @@ def draw_clusters(graph):
     n_clusters = len(set([v["cluster"] for _, v in graph.nodes(data=True)]))
     colors = generate_colors(n_clusters)
 
-    color_map = {v["cluster"]: colors[i] for i, (_, v) in enumerate(graph.nodes(data=True))}
+    # color_map = {v["cluster"]: colors[i] for i, (_, v) in enumerate(graph.nodes(data=True))}
 
     # Draw the graph with nodes colored by their clusters
     draw_networkx(graph, with_labels=False, node_color=[colors[v["cluster"]] for _, v in graph.nodes(data=True)])

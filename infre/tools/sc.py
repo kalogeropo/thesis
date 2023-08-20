@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.manifold import SpectralEmbedding
 
 class SpectralClustering:
-    def __init__(self, n_clusters=10, affinity='nearest_neighbors', n_neighbors=3, assign_labels='kmeans', n_init=10):
+    def __init__(self, n_clusters=10, affinity='precomputed', n_neighbors=3, assign_labels='kmeans', n_init=10):
         self.n_clusters = n_clusters
         self.affinity = affinity
         self.n_neighbors = n_neighbors
@@ -52,3 +52,6 @@ class SpectralClustering:
             raise ValueError("Invalid assign_labels parameter")
         
         return labels, embeddings
+    
+
+

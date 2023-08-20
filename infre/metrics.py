@@ -1,12 +1,23 @@
 from numpy import dot, mean
 from numpy.linalg import norm
 
+
+def tf(terms):
+    tf = {}
+    for term in terms:
+        if term not in tf:
+            tf[term] = 1
+        elif term in tf:
+            tf[term] += 1
+    return tf
+
+
 def cosine_similarity(u, v):
     if (u == 0).all() | (v == 0).all():
         return 0.
     else:
         return dot(u,v) / (norm(u)*norm(v))
-    
+
 
 def precision_recall(retrieved_docs, relevant):
     

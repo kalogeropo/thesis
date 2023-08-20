@@ -1,7 +1,7 @@
 from math import log2
 from numpy import array,zeros
 
-from infre import retrieval
+from infre import metrics
 
 
 class VectorSpace():

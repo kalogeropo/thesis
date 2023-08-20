@@ -89,7 +89,6 @@ class Collection():
 
     def create_inverted_index(self):
 
-        # nwk = self.calculate_nwk()
         id, cnt = 0, 0
         inv_index = {}
 
@@ -101,7 +100,6 @@ class Collection():
                                             'id': id,
                                             'total_tf': tf,
                                             'posting_list': [[doc.doc_id, tf]],
-                                            #'nwk': nwk[key],
                                             'term': term
                                         }
                         id += 1
