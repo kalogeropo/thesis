@@ -162,3 +162,9 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 .vscode/
+figures/
+infre/__pycache__/
+infre/helpers/__pycache__/
+infre/models/__pycache__/
+infre/preprocess/__pycache__
+saved_models/
