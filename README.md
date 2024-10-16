@@ -4,11 +4,10 @@ This repository hosts the code implementation, experiments, and results for my I
 
 - **Vector Space (VS)** [Link to VS model reference]
 - **Set-Based (SB)** [Link to SB model reference]
-- **Graphical Set-Based (GSB)** [Link to GSB model reference]
 
 ### Overview of the `infre` Library
 
-In this study, a new family of IR models was designed and implemented by extending the SB and GSB models. The **`infre`** library is envisioned to evolve, hosting various state-of-the-art (SOTA) IR models. The goal is to allow easy fitting to specific collections and seamless comparison across models using IR metrics like *Precision, Recall, F1-Score, AVEp, MAP, DCG, etc.*, and others for educational and research purposes.
+In this study, a new family of IR models was designed and implemented by extending the SB and Graphical extension of the Set-Based (GSB) models. The **`infre`** library is envisioned to evolve, hosting various state-of-the-art (SOTA) IR models. The goal is to allow easy fitting to specific collections and seamless comparison across models using IR metrics like *Precision, Recall, F1-Score, AVEp, MAP, DCG, etc.*, and others for educational and research purposes.
 
 ### Repository Structure
 
