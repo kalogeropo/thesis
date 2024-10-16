@@ -1,11 +1,12 @@
-from numpy import mean
-from infre.preprocess import Collection
+import os
 import pandas as pd
-from infre.xlwriter import ExcelWriter
+
 # configs & other
 import yaml
-import os
-from numpy import array
+from numpy import array, mean
+
+from infre.preprocess import Collection
+from infre.xlwriter import ExcelWriter
 
 
 def run_experiment(models, c={}):
@@ -39,20 +40,19 @@ def run_experiment(models, c={}):
     try:
         cond = list(c.keys())[0]
         typ = list(c.values())[0]
-        
-        if cond == 'edge':
+
+        if cond == "edge":
             wout_avg = config["wout_avg"][typ]
-            second_param = array(config['edge_coeffs']) * wout_avg
-        elif cond == 'sim':
-            second_param = config['similarities']
+            second_param = array(config["edge_coeffs"]) * wout_avg
+        elif cond == "sim":
+            second_param = config["similarities"]
 
     except IndexError:
         second_param = []
-    
-    cluster_sizes = config["cluster_sizes"]
-    
 
-    total_exps = len(cluster_sizes) * len(second_param) * len(models) 
+    cluster_sizes = config["cluster_sizes"]
+
+    total_exps = len(cluster_sizes) * len(second_param) * len(models)
     current_exp = 0
     for cluster_size in cluster_sizes:
         for j, param in enumerate(second_param):
@@ -61,19 +61,23 @@ def run_experiment(models, c={}):
 
             for i in range(len(models)):
                 # Create model instance using the provided constructor
-                model = models[i](col, clusters=cluster_size, condition={cond: param}).fit(queries)
+                model = models[i](
+                    col, clusters=cluster_size, condition={cond: param}
+                ).fit(queries)
                 pre, rec = models[i].evaluate(rels)
-                print(f'{model._model_name()}: {mean(pre):.3f}, {mean(rec):.3f}')
+                print(f"{model._model_name()}: {mean(pre):.3f}, {mean(rec):.3f}")
 
                 # Get average precision and percentage of pruning applied
                 avg_precs += [mean(pre)]
                 prune_perc += [model.prune]
 
                 # Concatenate new experiments
-                experiment[f'{model._model_name()}-{cluster_size}-{param}'] = pre
+                experiment[f"{model._model_name()}-{cluster_size}-{param}"] = pre
 
-    experiment['avg_pre'] = pd.Series(avg_precs)
-    experiment['%prune'] = pd.Series(prune_perc)
+    experiment["avg_pre"] = pd.Series(avg_precs)
+    experiment["%prune"] = pd.Series(prune_perc)
 
     print("Storing Experiments...")
-    writer.write_to_excel(sheet_name='complete-graph-clusters-sim', dataframe=experiment)
+    writer.write_to_excel(
+        sheet_name="complete-graph-clusters-sim", dataframe=experiment
+    )

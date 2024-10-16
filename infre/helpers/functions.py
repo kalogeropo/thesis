@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 import numpy as np
 from pandas import DataFrame
 from time import time
@@ -93,10 +94,12 @@ def generate_colors(n):
     return colors
 
 
-from networkx import to_numpy_array, is_connected, connected_components
+from networkx import from_numpy_array, laplacian_matrix, to_numpy_array, is_connected, connected_components
 from infre.metrics import cosine_similarity
 from pandas import DataFrame
 from infre.tools import SpectralClustering
+from scipy.sparse.linalg import eigsh
+from sklearn.metrics import silhouette_score
 
 def cluster_graph(graph, collection, n_clstrs):
     """
@@ -281,3 +284,42 @@ def draw_graph(graph, **kwargs):
     labels = get_edge_attributes(graph, 'weight')
     draw_networkx_edge_labels(graph, pos_nodes, edge_labels=labels)
     plt.show()
+
+def cluster_optimization(graph, collection, method):
+    print("Cluster optimization is enabled.")
+    adj_matrix = to_numpy_array(graph)
+    if method == "eigen_gap":
+        eigenvalues = calculate_laplacian_spectrum(adj_matrix)
+        return  eigen_gap_heuristic(eigenvalues)
+    if method == "elbow":
+        pass 
+    if method == "silhouette":
+        return silhouette_based_clustering(adj_matrix,200)
+
+def calculate_laplacian_spectrum(adj_matrix):
+        """Calculates the eigenvalues of the Laplacian matrix."""
+        laplacian = laplacian_matrix(from_numpy_array(adj_matrix))
+        eigenvalues, _ = eigsh(laplacian, k=adj_matrix.shape[0] - 1, which='SM')
+        return np.sort(eigenvalues)
+
+def eigen_gap_heuristic(eigenvalues):
+        """Estimates the optimal number of clusters using the Eigen-Gap Heuristic."""
+        gaps = np.diff(eigenvalues)
+        return np.argmax(gaps) + 1
+
+def silhouette_based_clustering(adj_matrix, max_clusters = 200):
+    """Estimates the optimal number of clusters based on silhouette scores."""
+    silhouette_scores = []
+    for n_clusters in range(2, max_clusters + 1,20):
+        spectral_clustering = SpectralClustering(n_clusters=n_clusters, affinity='precomputed')
+        labels = spectral_clustering.fit_predict(adj_matrix)
+        score = silhouette_score(adj_matrix, labels, metric='precomputed')
+        silhouette_scores.append(score)
+
+    plt.plot(range(2, max_clusters + 1), silhouette_scores, marker='o')
+    plt.title("Silhouette Scores for Spectral Clustering")
+    plt.xlabel("Number of Clusters")
+    plt.ylabel("Silhouette Score")
+    plt.show()
+
+    return np.argmax(silhouette_scores) + 2
