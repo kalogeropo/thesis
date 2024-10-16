@@ -1,4 +1,4 @@
-# Thesis Repository: "On the Improvement of Graph-Based Information Retrieval Models Using Machine Learning"
+# Thesis Repository: "Application of Machine Learning Techniques to Improve the Performance of Graph-Based Information Retrieval Models"
 
 This repository hosts the code implementation, experiments, and results for my Integrated Master's thesis, titled **"On the Improvement of Graph-Based Information Retrieval Models Using Machine Learning"**, along with its byproduct—a paper titled **"Spectral Clustering and Query Expansion on the Graphical Set-Based Model"**. For these purposes, a Python library named **`infre`** was developed, supporting classical Information Retrieval (IR) models such as:
 
