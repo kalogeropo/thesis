@@ -23,59 +23,50 @@ if __name__ == "__main__":
     # create collection
     col = Collection(path).create(first=-1)
 
-    """
     ########## SET BASED ####################
     sb_model = SetBased(col).fit(queries)
     pre, rec = sb_model.evaluate(rels)
     print(f'SetBased: {mean(pre):.3f}, {mean(rec):.3f}') # 0.166 (raw queries)
-    
     # sb_model.save_results(pre, rec)
     # sb_model.save_model('saved_models')
-    
     
     ########## GRAPHICAL SET BASED #################### .188 (raw)
     gsb_model = GSB(col).fit(queries)
     pre, rec = gsb_model.evaluate(rels)
-    
     print(f'GSB: {mean(pre):.3f}, {mean(rec):.3f}')
     # gsb_model.save_results(pre, rec)
     # gsb_model.save_model('saved_models')
-    print(gsb_model.graph.number_of_nodes(), gsb_model.graph.number_of_edges())
+    # print(gsb_model.graph.number_of_nodes(), gsb_model.graph.number_of_edges())
     
     ########## GRAPHICAL SET BASED WITH PRUNING #################### .207 (raw)
-    # graph, _ = prune_graph(gsb_model.graph, col, n_clstrs=100)
-
+    # graph, _ = prune_graph(gsb_model.graph, col)
     # gsb_pruned_model = GSB(col, graph).fit(queries)
     # pre, rec = gsb_pruned_model.evaluate(rels)
     # print(f'GSB Pruned: {mean(pre):.3f}, {mean(rec):.3f}')
-    
+
     pgsb_model = PGSB(col, clusters=50).fit(queries)
     pre, rec = pgsb_model.evaluate(rels)
-    
     print(f'PGSB: {mean(pre):.3f}, {mean(rec):.3f}')
 
-    """
     ########## GRAPHICAL SET BASED WITH WINDOW ####################
     gsb_window_model = GSBWindow(col, window=0.15).fit(queries)
-    print(gsb_window_model.graph)
-
     pre, rec = gsb_window_model.evaluate(rels)
     print(f"GSBW: {mean(pre):.3f}, {mean(rec):.3f}")
+    
     # gsb_window_model.save_results(pre, rec)
     # gsb_window_model.save_model('saved_models')
 
     ########## GRAPHICAL SET BASED WINDOW WITH PRUNING ####################
     # graph, _ = prune_graph(gsb_window_model.graph, col, n_clstrs=100)
-
     # gsbw_pruned_model = GSBWindow(col, 10, graph).fit(queries)
     # pre, rec = gsbw_pruned_model.evaluate(rels)
     # print(f'GSB Window Pruned: {mean(pre):.3f}, {mean(rec):.3f}')
 
-    # pgsbw_model = PGSBW(col, window=7, clusters=50).fit(queries)
-    # pre, rec = pgsbw_model.evaluate(rels)
+    pgsbw_model = PGSBW(col, window=7, clusters=50).fit(queries)
+    pre, rec = pgsbw_model.evaluate(rels)
 
-    # print(f'PGSBW: {mean(pre):.3f}, {mean(rec):.3f}')
-    """
+    print(f'PGSBW: {mean(pre):.3f}, {mean(rec):.3f}')
+
     ########## CONCEPTUALIZED GRAPHICAL SET BASED ####################  .226 (raw queries)
     con_gsb_model = ConGSB(col, clusters=50, cond={'sim': 0.3}).fit(queries)
     pre, rec = con_gsb_model.evaluate(rels)
@@ -83,7 +74,7 @@ if __name__ == "__main__":
     print(f'CGSB: {mean(pre):.3f}, {mean(rec):.3f}')
     print(con_gsb_model.graph.number_of_nodes(), con_gsb_model.graph.number_of_edges())
     
-    """
+ 
     ######### CONCEPTUALIZED GRAPHICAL SET BASED Window ####################
     con_gsbw_model = ConGSBWindow(col, window=0.15, clusters=50, cond={"sim": 0.2}).fit(
         queries
@@ -91,12 +82,11 @@ if __name__ == "__main__":
     pre, rec = con_gsbw_model.evaluate(rels)
 
     print(f"CGSBW: {mean(pre):.3f}, {mean(rec):.3f}")
-    print(
-        con_gsbw_model.graph.number_of_nodes(), con_gsbw_model.graph.number_of_edges()
-    )
+    print(con_gsbw_model.graph.number_of_nodes(), con_gsbw_model.graph.number_of_edges())
 
     """
     import numpy as np
+    from node2vec import Node2Vec
 
     # dim reduction with SVD
     from sklearn.decomposition  import PCA
@@ -107,13 +97,8 @@ if __name__ == "__main__":
     plt.show()
     print("Delta average")
     print(sum(value for _, value in union.degree()) / union.number_of_nodes())
-    """
-
-    from time import time
 
     from node2vec import Node2Vec
-
-    start = time()
 
     # Define the embedding dimensions
     dimensions = 64
@@ -131,6 +116,4 @@ if __name__ == "__main__":
     # Print the most similar nodes
     for node, similarity in similar_nodes:
         print(node, similarity)
-
-    print(time() - start)
-    # gsb_model.load_model()
+    """
