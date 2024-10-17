@@ -225,7 +225,7 @@ class ConGSB(GSB):
             # Pick 'k' terms from the expansion terms (if 'k' is greater than the number of expansion terms, take all)
             return expansion_terms[:k]
 
-    def fit_evaluate(self, queries, relevants):
+    def fit_evaluate(self, queries, relevants,query_expansion = False):
 
         # inverted index of collection documents
         inv_index = self.collection.inverted_index
@@ -235,9 +235,10 @@ class ConGSB(GSB):
 
             ################# QUERY EXPANSION ###################
             # k = int(len(query)/2)+1 if len(query) > 12 else len(query)
-            k = len(query)  # //2 + 1
-
-            query += self.expand_q(query, k)
+            
+            if query_expansion:
+                k = len(query)  # //2 + 1
+                query += self.expand_q(query, k)
             # query += self.expand_q_centroids(query, k)
 
             # apply apriori to find frequent termsets

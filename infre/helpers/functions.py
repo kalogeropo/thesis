@@ -141,6 +141,8 @@ def cluster_graph(graph, collection, n_clstrs):
                 adj_matrix[index2, index1] = .2
     
     # Perform spectral clustering
+    print(f'Spectral Clustering {n_clstrs} Clusters, affinity precomputed, kmeans assign_labels')
+
     sc = SpectralClustering(n_clusters=n_clstrs, affinity='precomputed', assign_labels='kmeans')
     labels, _embeddings = sc.fit_predict(adj_matrix)
 
@@ -167,7 +169,8 @@ def prune_graph(graph, collection, labels, embeddings, condition):
     - networkx.Graph: The pruned graph.
     - float: Percentage of pruned edges.
     """
-     
+    
+    print("Pruning edges based on the given condition.") 
     # Edges before pruning
     init_edges = graph.number_of_edges()
     # Track of deleted edges
