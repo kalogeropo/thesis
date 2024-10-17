@@ -1,4 +1,4 @@
-# Thesis Repository: "Application of Machine Learning Techniques to Improve the Performance of Graph-Based Information Retrieval Models"
+# "Application of Machine Learning Techniques to Improve the Performance of Graph-Based Information Retrieval Models"
 
 This repository hosts the code implementation, experiments, and results for my Integrated Master's thesis, titled **"On the Improvement of Graph-Based Information Retrieval Models Using Machine Learning"**, along with its byproduct—a paper titled **"Spectral Clustering and Query Expansion on the Graphical Set-Based Model"**. For these purposes, a Python library named **`infre`** was developed, supporting classical Information Retrieval (IR) models such as:
 
@@ -11,6 +11,7 @@ In this study, a new family of IR models was designed and implemented by extendi
 
 ### Repository Structure
 
+- **`collections/`**: A folder that contains a collection of 1239 abstracts regarding the Cystic Fibrossis (CF) disorder accompanied by 100 expert revised queries with relevant documents ids for each query that can be applied in order to evaluate the performance of the models.
 - **`experiments/`**: This folder contains all the Python scripts (`.py` files) used for running the associated experiments. Results are exported as `.xlsx` files for further analysis.
 - **`notebooks/`**: The final analysis is performed through Jupyter notebooks (with filenames containing `*-exploitation`). These notebooks load the `.xlsx` files, compare the results across models, and validate our hypothesis—demonstrating that introducing a conceptualized aspect into graph-based IR models improved precision by **x%**.
 

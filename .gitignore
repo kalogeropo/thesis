@@ -1,5 +1,5 @@
 # Datasets
-collections/
+#collections/
 datasets/
 
 # Byte-compiled / optimized / DLL files
@@ -168,3 +168,6 @@ cython_debug/
 .vscode/
 figures/
 saved_models/
+
+# debug NBs
+debug_and_testing.ipynb
