@@ -14,6 +14,7 @@ def main():
 
     # Iterate over similarity values and evaluate the model
     for sim in range (2, 10):
+    # sim = 3 # manuly selection of similarity value !time issues!
         print(f"Iteration {sim} with Similarity: {sim/10}")
         start_time = time()
         cgsb_model = ConGSB(col, clusters=50, cond={'sim': sim/10},cluster_optimization="eigen_gap")

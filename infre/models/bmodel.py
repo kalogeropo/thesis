@@ -9,6 +9,7 @@ from infre.tools import apriori
 from infre.metrics import cosine_similarity
 from abc import ABC, abstractclassmethod
 from infre.metrics import precision_recall
+from infre.xlwriter import ExcelWriter
 
 
 class BaseIRModel(ABC):
@@ -291,8 +292,15 @@ class BaseIRModel(ABC):
         path = join(getcwd(), 'saved_models', self.model, 'results')
 
         if not exists(path): makedirs(path)
-
-        df.to_excel(join(path, f'{self.model.lower()}.xlsx'))
+        
+        #### TEMPORARY DEBUGG LINES ####
+        df.to_excel(join(path, f'temp2.xlsx'))        
+        #######################################
+        xl_writer = ExcelWriter(join(path, f'{self.model.lower()}.xlsx'))
+        if not xl_writer.check_file_exists():
+            xl_writer.create_file(self.model, df)
+        else:
+            xl_writer.append_to_sheet(self.model, df)
 
         return self
 

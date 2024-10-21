@@ -1,6 +1,7 @@
 # Datasets
 #collections/
 datasets/
+collections/test_cf/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

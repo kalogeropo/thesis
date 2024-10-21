@@ -12,7 +12,7 @@ class ExcelWriter:
         dataframe.to_excel(self.file_path, sheet_name=sheet_name, index=False)
 
     def append_to_sheet(self, sheet_name, dataframe):
-        with pd.ExcelWriter(self.file_path, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
+        with pd.ExcelWriter(self.file_path, engine='openpyxl', mode='a', if_sheet_exists='new') as writer:
             dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
 
     def write_to_excel(self, sheet_name, dataframe):
