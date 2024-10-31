@@ -3,6 +3,7 @@ import numpy as np
 from pandas import DataFrame
 from time import time
 
+MAX_CLUSTERS = 500
 
 # Define a function to generate a single random walk
 def generate_random_walk(graph, start_node, walk_length, transition_probs):
@@ -297,7 +298,29 @@ def cluster_optimization(graph, collection, method):
     if method == "elbow":
         pass 
     if method == "silhouette":
-        return silhouette_based_clustering(adj_matrix,200)
+         # Check if the graph is connected
+        if not is_connected(graph):
+            print("Graph is not connected")
+            components = list(connected_components(graph))
+
+        # Connect the subgraphs
+            num_subgraphs = len(components)
+            if num_subgraphs > 1:
+                for i in range(num_subgraphs - 1):
+                    subgraph1 = components[i]
+                    subgraph2 = components[i + 1]
+                
+                    node1 = choice(list(subgraph1))
+                    node2 = choice(list(subgraph2))
+                
+                    graph.add_edge(node1, node2, weight=.2)
+
+                    index1 = collection.inverted_index[node1]['id']
+                    index2 = collection.inverted_index[node2]['id']
+                    adj_matrix[index1, index2] = .2
+                    adj_matrix[index2, index1] = .2
+
+        return silhouette_based_clustering(adj_matrix,MAX_CLUSTERS)
 
 def calculate_laplacian_spectrum(adj_matrix):
         """Calculates the eigenvalues of the Laplacian matrix."""
@@ -310,19 +333,22 @@ def eigen_gap_heuristic(eigenvalues):
         gaps = np.diff(eigenvalues)
         return np.argmax(gaps) + 1
 
-def silhouette_based_clustering(adj_matrix, max_clusters = 200):
+def silhouette_based_clustering(adj_matrix, max_clusters = 1000):
     """Estimates the optimal number of clusters based on silhouette scores."""
     silhouette_scores = []
-    for n_clusters in range(2, max_clusters + 1,20):
-        spectral_clustering = SpectralClustering(n_clusters=n_clusters, affinity='precomputed')
-        labels = spectral_clustering.fit_predict(adj_matrix)
-        score = silhouette_score(adj_matrix, labels, metric='precomputed')
+    cl_range =range(50, max_clusters + 1,50) 
+    for n_clusters in cl_range:
+        sc = SpectralClustering(n_clusters=n_clusters, affinity='precomputed', assign_labels='kmeans')
+        labels, _embeddings = sc.fit_predict(adj_matrix)
+        score = silhouette_score(adj_matrix, list(labels), metric='precomputed')
+        print(score)
         silhouette_scores.append(score)
 
-    plt.plot(range(2, max_clusters + 1), silhouette_scores, marker='o')
+    print(len(silhouette_scores))
+    plt.plot(cl_range, silhouette_scores, marker='o')
     plt.title("Silhouette Scores for Spectral Clustering")
     plt.xlabel("Number of Clusters")
     plt.ylabel("Silhouette Score")
     plt.show()
 
-    return np.argmax(silhouette_scores) + 2
+    return cl_range[np.argmax(silhouette_scores)]

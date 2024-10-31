@@ -279,8 +279,9 @@ class BaseIRModel(ABC):
     
 
     # stores to excel file the precision recall performance of the model
-    def save_results(self, *args):
-
+    def save_results(self,name = None, *args):
+        if not name:
+            name = self.model
         # pre, rec = args if args else self.precision, self.recall
         if args:
             pre, rec = args
@@ -296,7 +297,7 @@ class BaseIRModel(ABC):
         #### TEMPORARY DEBUGG LINES ####
         df.to_excel(join(path, f'temp2.xlsx'))        
         #######################################
-        xl_writer = ExcelWriter(join(path, f'{self.model.lower()}.xlsx'))
+        xl_writer = ExcelWriter(join(path, f'{name.lower()}.xlsx'))
         if not xl_writer.check_file_exists():
             xl_writer.create_file(self.model, df)
         else:
